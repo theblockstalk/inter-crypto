@@ -102,6 +102,7 @@ contract InterCrypto is usingOraclize { // ORACALIZE
 		else {
 			consoleLogStr(814, 'result', result);
 			address depositAddress = parseAddr(result);
+			assert(depositAddress != msg.sender); // prevent potential DAO hack that can be done by oracalize
 			transactions[transactionID].depositAddress = depositAddress;
 			consoleLogAdd(815, 'depositAddress', transactions[transactionID].depositAddress);
 			depositAddress.transfer(transactions[transactionID].amount);
