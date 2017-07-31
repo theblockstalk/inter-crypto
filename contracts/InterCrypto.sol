@@ -110,12 +110,8 @@ contract InterCrypto is myUsingOracalize {
     address public owner;
 
     struct Transaction {
-        // string coinSymbol;
         address returnAddress;
-        // string toAddress;
         uint amount;
-        // 	address depositAddress;
-        // string reasonForAbort;
     }
 
     // TODO: make the transactionID be a hash to provide anonimity...
@@ -125,17 +121,18 @@ contract InterCrypto is myUsingOracalize {
     mapping (bytes32 => uint) oracalizeMyId2transactionID;
 
     // _______________EVENTS_______________
-    event TransactionMade(uint transactionID);
+    event TransactionSubmitted(uint transactionID);
+    event TransactionMade(uint transactionID, address depositAddress);
     event TransactionAborted(uint transactionID, string reason);
 
     // events for debugging purposes only
-    event consoleLogStr(uint indexed ID, string what, string value);
-    event consoleLogUin(uint indexed ID, string what, uint value);
-    event consoleLogInt(uint indexed ID, string what, int value);
-    event consoleLogAdd(uint indexed ID, string what, address value);
-    event consoleLogB32(uint indexed ID, string what, bytes32 value);
-    event consoleLogB01(uint indexed ID, string what, bytes1 value);
-    event consoleLogByt(uint indexed ID, string what, bytes value);
+    // event consoleLogStr(uint indexed ID, string what, string value);
+    // event consoleLogUin(uint indexed ID, string what, uint value);
+    // event consoleLogInt(uint indexed ID, string what, int value);
+    // event consoleLogAdd(uint indexed ID, string what, address value);
+    // event consoleLogB32(uint indexed ID, string what, bytes32 value);
+    // event consoleLogB01(uint indexed ID, string what, bytes1 value);
+    // event consoleLogByt(uint indexed ID, string what, bytes value);
 
     // _______________EXTERNAL FUNCTIONS_______________
     // constructor
@@ -166,26 +163,21 @@ contract InterCrypto is myUsingOracalize {
 
         if (msg.value > oracalizePrice) {
 
-            // 			transactions[transactionID] = Transaction(_coinSymbol, msg.sender, _toAddress, msg.value-oracalizePrice, msg.sender, '');
             transactions[transactionID] = Transaction(msg.sender, msg.value-oracalizePrice);
 
 
             // Create post data string like ' {"withdrawal":"LbZcDdMeP96ko85H21TQii98YFF9RgZg3D","pair":"eth_ltc","returnAddress":"558999ff2e0daefcb4fcded4c89e07fdf9ccb56c"}'
             string memory postData = createShapeShiftTransactionPost(_coinSymbol, _toAddress);
-            consoleLogStr(3000, 'postData', postData);
 
             // TODO: send custome gasLimit for retrn transaction equal to the exact cost of __callback
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData); // ORACALIZE
             // TODO: check if myQueryId == 0
             oracalizeMyId2transactionID[myQueryId] = transactionID;
-            consoleLogB32(3010, 'myQueryId', myQueryId); // ORACALIZE
+            TransactionSubmitted(transactionID);
         }
         else {
-            transactions[transactionID] = Transaction(msg.sender, msg.value);
             TransactionAborted(transactionID, "Not enough ETH sent to cover Oracalize fee");
-
-            consoleLogStr(3050, 'error', 'not enough ETH sent');
-            msg.sender.transfer(msg.value);
+            msg.sender.transfer(msg.value); // IS THIS SAFE???
         }
     }
 
@@ -196,16 +188,14 @@ contract InterCrypto is myUsingOracalize {
         uint transactionID = oracalizeMyId2transactionID[myid];
 
         if( bytes(result).length == 0 ) {
-            consoleLogStr(814, 'result', 'result was EMPTY');
+            TransactionAborted(transactionID, "Oracalize return value was invalid");
             // TODO: return any unspend funds back to owner -- in a callback?
         }
         else {
-            consoleLogStr(814, 'result', result);
             address depositAddress = parseAddr(result);
             assert(depositAddress != msg.sender); // prevent potential DAO hack that can be done by oracalize
-            consoleLogAdd(815, 'depositAddress', depositAddress);
             depositAddress.transfer(transactions[transactionID].amount);
-            consoleLogStr(816, 'transaction sent', 'true');
+            TransactionMade(transactionID, depositAddress);
 
             //TODO: optional callback to original sender to let them know transaction is finished???
         }
