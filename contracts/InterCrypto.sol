@@ -74,7 +74,6 @@ contract myUsingOracalize {
     }
 
     function getCodeSize(address _addr) constant internal returns(uint _size) {
-        address useme = _addr; useme = 0;
         assembly {
             _size := extcodesize(_addr)
         }
