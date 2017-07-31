@@ -14,8 +14,8 @@ contract InterCrypto is usingOraclize { // ORACALIZE
     string coinSymbol;
     address returnAddress;
     string toAddress;
-		uint amount;
-		address depositAddress;
+	uint amount;
+	address depositAddress;
     string reasonForAbort;
   }
 
@@ -23,7 +23,7 @@ contract InterCrypto is usingOraclize { // ORACALIZE
   mapping (uint => Transaction) transactions;
   uint transactionCount = 0;
 
-	mapping (bytes32 => uint) oracalizeMyId2transactionID;
+    mapping (bytes32 => uint) oracalizeMyId2transactionID;
 
 	// _______________EVENTS_______________
   event TransactionMade(uint transactionID);
@@ -92,12 +92,13 @@ contract InterCrypto is usingOraclize { // ORACALIZE
 
 	// Callback function for oracalize
 	function __callback(bytes32 myid, string result) {
-		if (msg.sender != oraclize_cbAddress()) throw; // ORACALIZE
+		if (msg.sender != oraclize_cbAddress()) revert(); // ORACALIZE
 
 		uint transactionID = oracalizeMyId2transactionID[myid];
 
 		if( bytes(result).length == 0 ) {
 			consoleLogStr(814, 'result', 'result was EMPTY');
+			// TODO: return any unspend funds back to owner -- in a callback?
 		}
 		else {
 			consoleLogStr(814, 'result', result);
@@ -107,6 +108,8 @@ contract InterCrypto is usingOraclize { // ORACALIZE
 			consoleLogAdd(815, 'depositAddress', transactions[transactionID].depositAddress);
 			depositAddress.transfer(transactions[transactionID].amount);
 			consoleLogStr(816, 'transaction sent', 'true');
+
+			//TODO: optional callback to original sender to let them know transaction is finished???
 		}
   }
 
