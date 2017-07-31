@@ -155,23 +155,24 @@ contract InterCrypto is myUsingOracalize {
     }
 
     // Request for a ShapeShift transaction to be made
-    function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable {
+    function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns(uint transactionID) {
         uint oracalizePrice = getInterCryptoPrice(); // ORACALIZE
 
-        uint transactionID = transactionCount;
+        transactionID = transactionCount;
         transactionCount++;
 
         if (msg.value > oracalizePrice) {
-
             transactions[transactionID] = Transaction(msg.sender, msg.value-oracalizePrice);
-
 
             // Create post data string like ' {"withdrawal":"LbZcDdMeP96ko85H21TQii98YFF9RgZg3D","pair":"eth_ltc","returnAddress":"558999ff2e0daefcb4fcded4c89e07fdf9ccb56c"}'
             string memory postData = createShapeShiftTransactionPost(_coinSymbol, _toAddress);
 
-            // TODO: send custome gasLimit for retrn transaction equal to the exact cost of __callback
+            // TODO: send custom gasLimit for retrn transaction equal to the exact cost of __callback
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData); // ORACALIZE
-            // TODO: check if myQueryId == 0
+            if (myQueryId == 0) {
+                TransactionAborted(transactionID, "oraclize myQueryId returned 0");
+                return;
+            }
             oracalizeMyId2transactionID[myQueryId] = transactionID;
             TransactionSubmitted(transactionID);
         }
@@ -189,7 +190,7 @@ contract InterCrypto is myUsingOracalize {
 
         if( bytes(result).length == 0 ) {
             TransactionAborted(transactionID, "Oracalize return value was invalid");
-            // TODO: return any unspend funds back to owner -- in a callback?
+            transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE???
         }
         else {
             address depositAddress = parseAddr(result);
