@@ -104,7 +104,7 @@ contract myUsingOracalize {
 
 /// @title Inter-crypto currency converter
 /// @author Jack Tanner - <jnt16@ic.ac.uk>
-// TODO: spicfy variables as memry or storage, and functions as prive, internal, public or external to optimize
+// TODO: spicfy variables as memory or storage, and functions as prive, internal, public or external to optimize
 contract InterCrypto is myUsingOracalize {
     // _______________VARIABLES_______________
     address public owner;
@@ -114,10 +114,8 @@ contract InterCrypto is myUsingOracalize {
         uint amount;
     }
 
-    // TODO: make the transactionID be a hash to provide anonimity...
     mapping (uint => Transaction) transactions;
     uint transactionCount = 0;
-
     mapping (bytes32 => uint) oracalizeMyId2transactionID;
 
     // _______________EVENTS_______________
@@ -141,7 +139,7 @@ contract InterCrypto is myUsingOracalize {
     }
 
     // suicide function
-    function kill() {
+    function kill() external {
         if (msg.sender == owner)
         selfdestruct(owner);
     }
@@ -158,7 +156,7 @@ contract InterCrypto is myUsingOracalize {
     function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns(uint transactionID) {
         uint oracalizePrice = getInterCryptoPrice(); // ORACALIZE
 
-        transactionID = transactionCount;
+        transactionID = transactionCount; // CAN THESE TWO LINES BE DONE IN ONE LINE MORE EFFICIENTLY??? transactionID = transactionCount++;
         transactionCount++;
 
         if (msg.value > oracalizePrice) {
@@ -170,7 +168,7 @@ contract InterCrypto is myUsingOracalize {
             // TODO: send custom gasLimit for retrn transaction equal to the exact cost of __callback
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData); // ORACALIZE
             if (myQueryId == 0) {
-                TransactionAborted(transactionID, "oraclize myQueryId returned 0");
+                TransactionAborted(transactionID, "unexpectedly high Oracalize price when calling oracalize_query");
                 return;
             }
             oracalizeMyId2transactionID[myQueryId] = transactionID;
@@ -178,7 +176,7 @@ contract InterCrypto is myUsingOracalize {
         }
         else {
             TransactionAborted(transactionID, "Not enough ETH sent to cover Oracalize fee");
-            msg.sender.transfer(msg.value); // IS THIS SAFE???
+            msg.sender.transfer(msg.value); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
         }
     }
 
@@ -190,32 +188,22 @@ contract InterCrypto is myUsingOracalize {
 
         if( bytes(result).length == 0 ) {
             TransactionAborted(transactionID, "Oracalize return value was invalid");
-            transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE???
+            transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
         }
         else {
             address depositAddress = parseAddr(result);
             assert(depositAddress != msg.sender); // prevent potential DAO hack that can be done by oracalize
-            depositAddress.transfer(transactions[transactionID].amount);
-            TransactionMade(transactionID, depositAddress);
-
+            if (depositAddress.send(transactions[transactionID].amount))
+                TransactionMade(transactionID, depositAddress);
+            else {
+                TransactionAborted(transactionID, "transaction to address returned by Oracalize failed");
+                transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
+            }
             //TODO: optional callback to original sender to let them know transaction is finished???
         }
     }
 
-    //TODO: function to return any unsent funds: from an addres + from 1 transaction
-
-    // Getter functions for Transaction information
-    function getTransactionReturnAddress(uint transactionID) constant external returns (address) {
-        return transactions[transactionID].returnAddress;
-    }
-    function getTransactionAmount(uint transactionID) constant external returns (uint) {
-        return transactions[transactionID].amount;
-    }
-
-    // Getter function for number of Transactions
-    function getNumberOfTransactions() constant external returns (uint) {
-        return transactionCount;
-    }
+    //TODO: function to return any unsent funds: from an addres + from 1 transaction. Uses safe withdrawal
     // _______________PUBLIC FUNCTIONS_______________
 
 
