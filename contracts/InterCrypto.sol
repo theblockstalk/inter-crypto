@@ -1,12 +1,111 @@
 pragma solidity ^0.4.4;
 
-/*import "github.com/oraclize/ethereum-api/oraclizeAPI.sol"; // ORACALIZE // only works with online browser solidity*/
-import './oraclizeAPI_0.4.sol'; // ORACALIZE
+contract OraclizeI {
+    address public cbAddress;
+    function query(uint _timestamp, string _datasource, string _arg) payable returns (bytes32 _id);
+    function query_withGasLimit(uint _timestamp, string _datasource, string _arg, uint _gaslimit) payable returns (bytes32 _id);
+    function query2(uint _timestamp, string _datasource, string _arg1, string _arg2) payable returns (bytes32 _id);
+    function query2_withGasLimit(uint _timestamp, string _datasource, string _arg1, string _arg2, uint _gaslimit) payable returns (bytes32 _id);
+    function queryN(uint _timestamp, string _datasource, bytes _argN) payable returns (bytes32 _id);
+    function queryN_withGasLimit(uint _timestamp, string _datasource, bytes _argN, uint _gaslimit) payable returns (bytes32 _id);
+    function getPrice(string _datasource) returns (uint _dsprice);
+    function getPrice(string _datasource, uint gaslimit) returns (uint _dsprice);
+    function useCoupon(string _coupon);
+    function setProofType(byte _proofType);
+    function setConfig(bytes32 _config);
+    function setCustomGasPrice(uint _gasPrice);
+    function randomDS_getSessionPubKeyHash() returns(bytes32);
+}
+
+contract OraclizeAddrResolverI {
+    function getAddress() returns (address _addr);
+}
+
+contract myUsingOracalize {
+    OraclizeAddrResolverI OAR;
+
+    OraclizeI oraclize;
+
+    function myUsingOracalize() {
+      if ((address(OAR)==0)||(getCodeSize(address(OAR))==0)) oraclize_setNetwork();
+      oraclize = OraclizeI(OAR.getAddress());
+    }
+
+    function update_oracalize() external {
+        oraclize = OraclizeI(OAR.getAddress());
+    }
+
+    function oraclize_setNetwork() internal returns(bool) {
+        if (getCodeSize(0x1d3B2638a7cC9f2CB3D298A3DA7a90B67E5506ed)>0){ //mainnet
+            OAR = OraclizeAddrResolverI(0x1d3B2638a7cC9f2CB3D298A3DA7a90B67E5506ed);
+            return true;
+        }
+        if (getCodeSize(0xc03A2615D5efaf5F49F60B7BB6583eaec212fdf1)>0){ //ropsten testnet
+            OAR = OraclizeAddrResolverI(0xc03A2615D5efaf5F49F60B7BB6583eaec212fdf1);
+            return true;
+        }
+        if (getCodeSize(0xB7A07BcF2Ba2f2703b24C0691b5278999C59AC7e)>0){ //kovan testnet
+            OAR = OraclizeAddrResolverI(0xB7A07BcF2Ba2f2703b24C0691b5278999C59AC7e);
+            return true;
+        }
+        if (getCodeSize(0x146500cfd35B22E4A392Fe0aDc06De1a1368Ed48)>0){ //rinkeby testnet
+            OAR = OraclizeAddrResolverI(0x146500cfd35B22E4A392Fe0aDc06De1a1368Ed48);
+            return true;
+        }
+        if (getCodeSize(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475)>0){ //ethereum-bridge
+            OAR = OraclizeAddrResolverI(0x6f485C8BF6fc43eA212E93BBF8ce046C7f1cb475);
+            return true;
+        }
+        if (getCodeSize(0x20e12A1F859B3FeaE5Fb2A0A32C18F5a65555bBF)>0){ //ether.camp ide
+            OAR = OraclizeAddrResolverI(0x20e12A1F859B3FeaE5Fb2A0A32C18F5a65555bBF);
+            return true;
+        }
+        if (getCodeSize(0x51efaF4c8B3C9AfBD5aB9F4bbC82784Ab6ef8fAA)>0){ //browser-solidity
+            OAR = OraclizeAddrResolverI(0x51efaF4c8B3C9AfBD5aB9F4bbC82784Ab6ef8fAA);
+            return true;
+        }
+        return false;
+    }
+
+    function oraclize_query(string datasource, string arg1, string arg2) internal returns (bytes32 id){
+        uint price = oraclize.getPrice(datasource);
+        if (price > 1 ether + tx.gasprice*200000) return 0; // unexpectedly high price
+        return oraclize.query2.value(price)(0, datasource, arg1, arg2);
+    }
+
+    function getCodeSize(address _addr) constant internal returns(uint _size) {
+        address useme = _addr; useme = 0;
+        assembly {
+            _size := extcodesize(_addr)
+        }
+        return _size;
+    }
+
+    function parseAddr(string _a) internal returns (address){
+        bytes memory tmp = bytes(_a);
+        uint160 iaddr = 0;
+        uint160 b1;
+        uint160 b2;
+        for (uint i=2; i<2+2*20; i+=2){
+            iaddr *= 256;
+            b1 = uint160(tmp[i]);
+            b2 = uint160(tmp[i+1]);
+            if ((b1 >= 97)&&(b1 <= 102)) b1 -= 87;
+            else if ((b1 >= 65)&&(b1 <= 70)) b1 -= 55;
+            else if ((b1 >= 48)&&(b1 <= 57)) b1 -= 48;
+            if ((b2 >= 97)&&(b2 <= 102)) b2 -= 87;
+            else if ((b2 >= 65)&&(b2 <= 70)) b2 -= 55;
+            else if ((b2 >= 48)&&(b2 <= 57)) b2 -= 48;
+            iaddr += (b1*16+b2);
+        }
+        return address(iaddr);
+    }
+}
 
 /// @title Inter-crypto currency converter
 /// @author Jack Tanner - <jnt16@ic.ac.uk>
-contract InterCrypto is usingOraclize { // ORACALIZE
-/*contract InterCrypto {*/
+// TODO: spicfy variables as memry or storage, and functions as prive, internal, public or external to optimize
+contract InterCrypto is myUsingOracalize {
 	// _______________VARIABLES_______________
 	address public owner;
 
@@ -61,7 +160,6 @@ contract InterCrypto is usingOraclize { // ORACALIZE
 	// Request for a ShapeShift transaction to be made
   function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable {
 		uint oracalizePrice = getInterCryptoPrice(); // ORACALIZE
-		/*uint oracalizePrice = 0;*/
 
 		uint transactionID = transactionCount;
 		transactionCount++;
@@ -74,12 +172,11 @@ contract InterCrypto is usingOraclize { // ORACALIZE
 			string memory postData = createShapeShiftTransactionPost(_coinSymbol, _toAddress);
 			consoleLogStr(3000, 'postData', postData);
 
+            // TODO: send custome gasLimit for retrn transaction
 			bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData); // ORACALIZE
-
+            // TODO: check if myQueryId == 0
 			oracalizeMyId2transactionID[myQueryId] = transactionID;
 			consoleLogB32(3010, 'myQueryId', myQueryId); // ORACALIZE
-
-
 		}
 		else {
 			transactions[transactionID] = Transaction(_coinSymbol, msg.sender, _toAddress, 0, msg.sender, 'Not enough ETH was sent to cover costs');
@@ -92,7 +189,7 @@ contract InterCrypto is usingOraclize { // ORACALIZE
 
 	// Callback function for oracalize
 	function __callback(bytes32 myid, string result) {
-		if (msg.sender != oraclize_cbAddress()) revert(); // ORACALIZE
+		if (msg.sender != oraclize.cbAddress()) revert(); // ORACALIZE
 
 		uint transactionID = oracalizeMyId2transactionID[myid];
 
@@ -112,6 +209,8 @@ contract InterCrypto is usingOraclize { // ORACALIZE
 			//TODO: optional callback to original sender to let them know transaction is finished???
 		}
   }
+
+  //TODO: function to return any unsent funds: from an addres + from 1 transaction
 
 	// Getter functions for Transaction information
 	function getTransactionCoinSymbol(uint transactionID) constant external returns (string) {
