@@ -21,6 +21,7 @@ contract OraclizeAddrResolverI {
     function getAddress() returns (address _addr);
 }
 
+// this is a reduced and optimize version of the usingOracalize contract in https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.4.sol
 contract myUsingOracalize {
     OraclizeAddrResolverI OAR;
 
