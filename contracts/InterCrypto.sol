@@ -107,7 +107,7 @@ contract myUsingOracalize {
 // TODO: spicfy variables as memory or storage, and functions as prive, internal, public or external to optimize
 contract InterCrypto is myUsingOracalize {
     // _______________VARIABLES_______________
-    address public owner;
+    address owner;
 
     struct Transaction {
         address returnAddress;
@@ -119,8 +119,8 @@ contract InterCrypto is myUsingOracalize {
     mapping (bytes32 => uint) oracalizeMyId2transactionID;
 
     // _______________EVENTS_______________
-    event TransactionSubmitted(uint transactionID);
-    event TransactionMade(uint transactionID, address depositAddress);
+    event TransactionStarted(uint transactionID);
+    event TransactionSentToShapeShift(uint transactionID, address depositAddress);
     event TransactionAborted(uint transactionID, string reason);
 
     // events for debugging purposes only
@@ -172,7 +172,7 @@ contract InterCrypto is myUsingOracalize {
                 return;
             }
             oracalizeMyId2transactionID[myQueryId] = transactionID;
-            TransactionSubmitted(transactionID);
+            TransactionStarted(transactionID);
         }
         else {
             TransactionAborted(transactionID, "Not enough ETH sent to cover Oracalize fee");
@@ -194,7 +194,7 @@ contract InterCrypto is myUsingOracalize {
             address depositAddress = parseAddr(result);
             assert(depositAddress != msg.sender); // prevent potential DAO hack that can be done by oracalize
             if (depositAddress.send(transactions[transactionID].amount))
-                TransactionMade(transactionID, depositAddress);
+                TransactionSentToShapeShift(transactionID, depositAddress);
             else {
                 TransactionAborted(transactionID, "transaction to address returned by Oracalize failed");
                 transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
