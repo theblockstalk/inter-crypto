@@ -21,12 +21,16 @@ contract AbstractENS {
     // Logged when the TTL of a node changes
     event NewTTL(bytes32 indexed node, uint64 ttl);
 }
-// https://ropsten.etherscan.io/address/0x112234455c3a32fd11230c42e7bccd4a84e02010
-// https://etherscan.io/ens (address: 0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef, webapp: https://registrar.ens.domains/, docs: https://docs.ens.domains/en/latest/)
+// https://docs.ens.domains/en/latest/
+// Ropsten ENS: 0x112234455c3a32fd11230c42e7bccd4a84e02010
+// .test:
+
+// Mainnet ENS: 0x314159265dD8dbb310642f98f50C066173C1259b
+// .eth: 0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef, https://etherscan.io/ens, webapp: https://registrar.ens.domains/
 
 
 contract InterCryptoI {
-    // _______________EVENTS_______________
+    // EVENTS
     event TransactionStarted(uint transactionID);
     event TransactionSentToShapeShift(uint transactionID, address depositAddress);
     event TransactionAborted(uint transactionID, string reason);
@@ -44,6 +48,7 @@ contract usingInterCrypto {
     function usingInterCrypto() {
         // set intercrypto address
         // if ((address(OAR)==0)||(getCodeSize(address(OAR))==0)) oraclize_setNetwork();
-        // interCrypto = InterCryptoI();
+        // Use ENS to get the InterCrypto address...
+        interCrypto = InterCryptoI(0x4944d0fb481983769d3d4ce4fa3b89fcad06d38e);
     }
 }
