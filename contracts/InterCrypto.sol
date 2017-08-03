@@ -198,25 +198,26 @@ contract InterCrypto is myUsingOracalize {
         }
         else {
             address depositAddress = parseAddr(result);
-            assert(depositAddress != msg.sender); // prevent potential DAO hack that can be done by oracalize
-            if (depositAddress.send(transactions[transactionID].amount))
+            assert(depositAddress != msg.sender); // prevent potential DAO hack that can potentially be done by oracalize
+            uint sendAmount = transactions[transactionID].amount;
+            transactions[transactionID].amount = 0;
+            if (depositAddress.send(sendAmount))
                 TransactionSentToShapeShift(transactionID, depositAddress);
             else {
                 TransactionAborted(transactionID, "transaction to address returned by Oracalize failed");
-                pendingWithdrawals[transactions[transactionID].returnAddress] += transactions[transactionID].amount;
-                transactions[transactionID].amount = 0;
+                pendingWithdrawals[transactions[transactionID].returnAddress] += sendAmount;
                 // transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
             }
             //TODO: optional callback to original sender to let them know transaction is finished???
         }
     }
 
-    //TODO: function to cancel specif transaction 1 transaction. Uses safe withdrawal
+    //TODO: function to cancel specif transaction 1 transaction. Uses safe withdrawal... ???
     // _______________PUBLIC FUNCTIONS_______________
     function withdraw() public {
-        var pendingWithdrawal = pendingWithdrawals[msg.sender];
+        uint amount = pendingWithdrawals[msg.sender];
         pendingWithdrawals[msg.sender] = 0;
-        msg.sender.transfer(pendingWithdrawal);
+        msg.sender.transfer(amount);
     }
 
     // _______________INTERNAL FUNCTIONS_______________
