@@ -10,6 +10,7 @@ contract InterCryptoI {
     function getInterCryptoPrice() constant public returns (uint);
     function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns(uint transactionID);
     function __callback(bytes32 myid, string result);
+    function withdraw();
 }
 
 contract usingInterCrypto {

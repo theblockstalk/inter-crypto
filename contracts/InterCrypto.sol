@@ -117,6 +117,7 @@ contract InterCrypto is myUsingOracalize {
     mapping (uint => Transaction) transactions;
     uint transactionCount = 0;
     mapping (bytes32 => uint) oracalizeMyId2transactionID;
+    mapping (address => uint) pendingWithdrawals;
 
     // _______________EVENTS_______________
     event TransactionStarted(uint transactionID);
@@ -169,6 +170,8 @@ contract InterCrypto is myUsingOracalize {
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData); // ORACALIZE
             if (myQueryId == 0) {
                 TransactionAborted(transactionID, "unexpectedly high Oracalize price when calling oracalize_query");
+                pendingWithdrawals[msg.sender] += msg.value-oracalizePrice;
+                transactions[transactionID].amount = 0;
                 return;
             }
             oracalizeMyId2transactionID[myQueryId] = transactionID;
@@ -176,7 +179,8 @@ contract InterCrypto is myUsingOracalize {
         }
         else {
             TransactionAborted(transactionID, "Not enough ETH sent to cover Oracalize fee");
-            msg.sender.transfer(msg.value); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
+            pendingWithdrawals[msg.sender] += msg.value;
+            // msg.sender.transfer(msg.value); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
         }
     }
 
@@ -188,7 +192,9 @@ contract InterCrypto is myUsingOracalize {
 
         if( bytes(result).length == 0 ) {
             TransactionAborted(transactionID, "Oracalize return value was invalid");
-            transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
+            pendingWithdrawals[transactions[transactionID].returnAddress] += transactions[transactionID].amount;
+            transactions[transactionID].amount = 0;
+            // transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
         }
         else {
             address depositAddress = parseAddr(result);
@@ -197,15 +203,21 @@ contract InterCrypto is myUsingOracalize {
                 TransactionSentToShapeShift(transactionID, depositAddress);
             else {
                 TransactionAborted(transactionID, "transaction to address returned by Oracalize failed");
-                transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
+                pendingWithdrawals[transactions[transactionID].returnAddress] += transactions[transactionID].amount;
+                transactions[transactionID].amount = 0;
+                // transactions[transactionID].returnAddress.transfer(transactions[transactionID].amount); // IS THIS SAFE??? PERHAPS SHOULD USE SAFE WITHDRAWAL
             }
             //TODO: optional callback to original sender to let them know transaction is finished???
         }
     }
 
-    //TODO: function to return any unsent funds: from an addres + from 1 transaction. Uses safe withdrawal
+    //TODO: function to cancel specif transaction 1 transaction. Uses safe withdrawal
     // _______________PUBLIC FUNCTIONS_______________
-
+    function withdraw() public {
+        var pendingWithdrawal = pendingWithdrawals[msg.sender];
+        pendingWithdrawals[msg.sender] = 0;
+        msg.sender.transfer(pendingWithdrawal);
+    }
 
     // _______________INTERNAL FUNCTIONS_______________
     // Authored by https://github.com/axic
