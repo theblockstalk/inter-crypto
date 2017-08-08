@@ -155,6 +155,15 @@ contract InterCrypto is myUsingOracalize {
 
     // Request for a ShapeShift transaction to be made
     function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns(uint transactionID) {
+        // Example arguments:
+        // "ltc", "LbZcDdMeP96ko85H21TQii98YFF9RgZg3D"   Litecoin
+        // "btc", "1L8oRijgmkfcZDYA21b73b6DewLtyYs87s"   Bitcoin
+        // "dash", "Xoopows17idkTwNrMZuySXBwQDorsezQAx"  Dash
+        // "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"  ZCash
+        // "doge" "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
+        // See https://info.shapeshift.io/about
+        // Test symbol pairs using POST transaction with ShapeShift API before using it with InterCrypto
+
         uint oracalizePrice = getInterCryptoPrice(); // ORACALIZE
 
         transactionID = transactionCount; // CAN THESE TWO LINES BE DONE IN ONE LINE MORE EFFICIENTLY??? transactionID = transactionCount++;
