@@ -5,7 +5,10 @@ import "github.com/ugmo04/inter-crypto/contracts/InterCryptoAPI.sol";
 
 contract InterCrypto_Demo is usingInterCrypto {
 
-    event Transaction(uint transactionID);
+    // event Transaction(uint transactionID);
+    event Deposit();
+    event WithdrawalNormal();
+    event WithdrawalInterCrypto(uint transactionID);
 
     // function goodSendToOtherBlockchain() external payable{
     //     uint transactionID = interCrypto.sendToOtherBlockchain.value(msg.value)('ltc', 'LbZcDdMeP96ko85H21TQii98YFF9RgZg3D');
@@ -31,8 +34,7 @@ contract InterCrypto_Demo is usingInterCrypto {
     //     interCrypto.recover();
     // }
 
-    uint public ethSum;
-    address public king_or_queen;
+    // uint public ethSum;
     address owner;
 
     modifier isOwner() {
@@ -45,7 +47,9 @@ contract InterCrypto_Demo is usingInterCrypto {
     }
 
     function () payable {
-      ethSum += msg.value;
+    //   ethSum += msg.value;
+      if (msg.value > 0)
+        Deposit();
     }
 
     function intercrypto_GetInterCryptoPrice() constant public returns (uint) {
@@ -53,12 +57,13 @@ contract InterCrypto_Demo is usingInterCrypto {
     }
 
     function withdrawNormal() isOwner external {
+        WithdrawalNormal();
         msg.sender.transfer(this.balance);
     }
 
     function intercrypto_SendToOtherBlockchain(string _coinSymbol, string _toAddress) isOwner external payable {
         uint transactionID = interCrypto.sendToOtherBlockchain.value(this.balance)(_coinSymbol, _toAddress);
-        Transaction(transactionID);
+        WithdrawalInterCrypto(transactionID);
     }
 
 
