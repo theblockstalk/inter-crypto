@@ -214,7 +214,7 @@ contract InterCrypto is myUsingOracalize {
 
     //TODO: function to cancel specif transaction 1 transaction. Uses safe withdrawal... ???
     // _______________PUBLIC FUNCTIONS_______________
-    function withdraw() public {
+    function recover() public {
         uint amount = pendingWithdrawals[msg.sender];
         pendingWithdrawals[msg.sender] = 0;
         msg.sender.transfer(amount);

@@ -27,8 +27,44 @@ contract InterCrypto_Demo is usingInterCrypto {
     }
 
     function withdrawInterCrypto() {
-        interCrypto.withdraw();
+        interCrypto.recover();
     }
-}
 
-// Rinkeby interCrypto = 0x4944d0fb481983769d3d4ce4fa3b89fcad06d38e
+    // uint public ethSum;
+    // address owner;
+
+    // modifier isOwner() {
+    //     require(msg.sender == owner);
+    //     _;
+    // }
+
+    // function InterCrypto_Demo() {
+    //     owner = msg.sender;
+    // }
+
+    // function () payable {
+    //   ethSum += msg.value;
+    // }
+
+    // function intercrypto_GetInterCryptoPrice() constant public returns (uint) {
+    //     return interCrypto.getInterCryptoPrice();
+    // }
+
+    // function withdrawNormal() isOwner external {
+    //     msg.sender.transfer(this.balance);
+    // }
+
+    // function intercrypto_SendToOtherBlockchain(string _coinSymbol, string _toAddress) isOwner external payable {
+    //     uint transactionID = interCrypto.sendToOtherBlockchain.value(this.balance + msg.value)(_coinSymbol, _toAddress);
+    //     Transaction(transactionID);
+    // }
+
+
+    // function intercrypto_Recover() isOwner public {
+    //     interCrypto.recover();
+    // }
+
+    // function kill() isOwner external {
+    //     selfdestruct(owner);
+    // }
+}
