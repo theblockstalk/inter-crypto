@@ -1,6 +1,7 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.15;
 
-import "github.com/ugmo04/inter-crypto/contracts/InterCrypto_Interface.sol";
+// import "github.com/ugmo04/inter-crypto/contracts/InterCrypto_Interface.sol";
+import "./InterCrypto_Interface.sol";
 
 contract InterCrypto_Wallet is usingInterCrypto {
 
@@ -16,7 +17,7 @@ contract InterCrypto_Wallet is usingInterCrypto {
         _;
     }
 
-    function InterCrypto_Demo() {
+    function InterCrypto_Wallet() {
         owner = msg.sender;
     }
 
@@ -43,8 +44,15 @@ contract InterCrypto_Wallet is usingInterCrypto {
     }
 
 
-    function intercrypto_Recover() isOwner public {
-        interCrypto.recover();
+    function intercrypto_Recover() isOwner external {
+        interCrypto.recover(); // When interCrypto.pendingWithdrawals has an amount > 0, this function call fails with too high gas
+        // Issue is in this line in recover() function "msg.sender.transfer(amount);"
+        // Have tried checking amount value, changing function from public to external, changing to latest version of compiler
+        // Next try using send instead of transfer
+    }
+
+    function intercrypto_amountRecoverable() isOwner public constant returns (uint) {
+        return interCrypto.amountRecoverable();
     }
 
     function kill() isOwner external {
