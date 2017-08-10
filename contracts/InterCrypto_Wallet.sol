@@ -24,25 +24,26 @@ contract InterCrypto_Wallet is usingInterCrypto {
     function () payable {
     }
 
-    // function deposit() payable {
-    //   if (msg.value > 0) {
-    //       funds[msg.sender] += msg.value;
-    //       Deposit();
-    //   }
-    // }
+    function deposit() payable {
+      if (msg.value > 0) {
+          funds[msg.sender] += msg.value;
+          Deposit();
+      }
+    }
 
     function intercrypto_GetInterCryptoPrice() constant public returns (uint) {
         return interCrypto.getInterCryptoPrice();
     }
 
-    function withdrawNormal() isOwner external {
+    function withdrawalNormal() isOwner external {
         WithdrawalNormal();
         msg.sender.transfer(this.balance);
     }
 
-    function intercrypto_SendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable {
+    function withdrawalInterCrypto(string _coinSymbol, string _toAddress) external payable {
+        uint amount = funds[msg.sender];
         funds[msg.sender] = 0;
-        uint transactionID = interCrypto.sendToOtherBlockchain.value(funds[msg.sender] + msg.value)(_coinSymbol, _toAddress);
+        uint transactionID = interCrypto.sendToOtherBlockchain.value(amount + msg.value)(_coinSymbol, _toAddress);
         WithdrawalInterCrypto(transactionID);
     }
 

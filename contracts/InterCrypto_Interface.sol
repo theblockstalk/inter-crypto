@@ -44,6 +44,7 @@ contract InterCrypto_Interface {
     function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns (uint transactionID);
     function recover() external;
     function amountRecoverable() constant public returns (uint);
+    function cancelTransaction(uint transactionID) external;
 }
 
 contract usingInterCrypto {
