@@ -42,7 +42,6 @@ contract InterCrypto_Interface {
     // FUNCTIONS
     function getInterCryptoPrice() constant public returns (uint);
     function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns (uint transactionID);
-    event consoleLogUint(string message, uint amount);
     function recover() external;
     function amountRecoverable() constant public returns (uint);
 }
@@ -60,7 +59,7 @@ contract usingInterCrypto {
         // set intercrypto address
         // if ((address(OAR)==0)||(getCodeSize(address(OAR))==0)) oraclize_setNetwork();
         // Use ENS to get the InterCrypto address...
-        interCrypto = InterCrypto_Interface(0xb7c4e3c76374253d1bac61a21983258e47facb74);
+        interCrypto = InterCrypto_Interface(0x3ce982b3797e3be73b09539a98862e816ca122a5);
         usingInterCryptoOwner = msg.sender;
     }
 }
