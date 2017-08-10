@@ -48,11 +48,18 @@ contract InterCryptoI {
 
 contract usingInterCrypto {
     InterCryptoI public interCrypto;
+    address usingInterCryptoOwner;
+
+    function updateInterCrypto(address newAddress) external {
+        require(msg.sender == usingInterCryptoOwner);
+        interCrypto = InterCryptoI(newAddress);
+    }
 
     function usingInterCrypto() {
         // set intercrypto address
         // if ((address(OAR)==0)||(getCodeSize(address(OAR))==0)) oraclize_setNetwork();
         // Use ENS to get the InterCrypto address...
-        interCrypto = InterCryptoI(0xd2d7f29ad51a6719a1db44f23a6975dab78cff5e);
+        interCrypto = InterCryptoI(0xc58bf02df60d0fa02901cabfd1efa72de155c827);
+        usingInterCryptoOwner = msg.sender;
     }
 }
