@@ -21,9 +21,21 @@ contract AbstractENS {
     // Logged when the TTL of a node changes
     event NewTTL(bytes32 indexed node, uint64 ttl);
 }
+
+contract TestRegistrar {
+    AbstractENS public ens;
+    bytes32 public rootNode;
+    mapping(bytes32=>uint) public expiryTimes;
+
+    function register(bytes32 subnode, address owner); // creates node = namehash(rootNode, subnode) from ensutils.js. This is what can be looked up using top level ENS contrac wth owner and resolver functions
+}
 // https://docs.ens.domains/en/latest/
+// namehash('test') = "0x04f740db81dc36c853ab4205bddd785f46e79ccedca351fc6dfcbd8cc9a33dd6"
+// namehash('eth') = "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
+// namehash('intercrypto.test') = "0x9a8369851a1b569f68940f87a1ee6b276ee3d4cb037cf4d073598669c1ade6a8"
+
 // Rinkeby ENS: 0xe7410170f87102df0055eb195163a03b7f2bff4a
-// .test:
+// .test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
 
 // Ropsten ENS: 0x112234455c3a32fd11230c42e7bccd4a84e02010
 // .eth:
@@ -48,19 +60,40 @@ contract InterCrypto_Interface {
 }
 
 contract usingInterCrypto {
-    InterCrypto_Interface interCrypto;
-    address usingInterCryptoOwner;
+    AbstractENS public abstractENS;
 
-    function updateInterCrypto(address newAddress) external {
-        require(msg.sender == usingInterCryptoOwner);
-        interCrypto = InterCrypto_Interface(newAddress);
+    InterCrypto_Interface public interCrypto;
+
+    function usingInterCrypto() public {
+        if ((address(abstractENS)==0)||(getCodeSize(address(abstractENS))==0)) ENS_setNetwork();
+        updateInterCrypto();
+
     }
 
-    function usingInterCrypto() {
-        // set intercrypto address
-        // if ((address(OAR)==0)||(getCodeSize(address(OAR))==0)) oraclize_setNetwork();
-        // Use ENS to get the InterCrypto address...
-        interCrypto = InterCrypto_Interface(0x3ce982b3797e3be73b09539a98862e816ca122a5);
-        usingInterCryptoOwner = msg.sender;
+    function ENS_setNetwork() internal returns(bool) {
+        if (getCodeSize(0x314159265dD8dbb310642f98f50C066173C1259b)>0){ //mainnet
+            abstractENS = AbstractENS(0x314159265dD8dbb310642f98f50C066173C1259b);
+            return true;
+        }
+        if (getCodeSize(0xe7410170f87102df0055eb195163a03b7f2bff4a)>0){ //rinkeby
+            abstractENS = AbstractENS(0xe7410170f87102df0055eb195163a03b7f2bff4a);
+            return true;
+        }
+        if (getCodeSize(0x112234455c3a32fd11230c42e7bccd4a84e02010)>0){ //ropsten
+            abstractENS = AbstractENS(0x112234455c3a32fd11230c42e7bccd4a84e02010);
+            return true;
+        }
+        return false;
+    }
+
+    function updateInterCrypto() public {
+        interCrypto = InterCrypto_Interface(abstractENS.resolver(0x9a8369851a1b569f68940f87a1ee6b276ee3d4cb037cf4d073598669c1ade6a8));
+    }
+
+    function getCodeSize(address _addr) constant internal returns(uint _size) {
+        assembly {
+            _size := extcodesize(_addr)
+        }
+        return _size;
     }
 }
