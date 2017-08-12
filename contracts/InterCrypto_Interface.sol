@@ -97,6 +97,10 @@ contract usingInterCrypto {
         interCrypto = InterCrypto_Interface(abstractENS.resolver(ENSresolverNode));
     }
 
+    function updateENSnode(bytes32 newNodeName) public {
+        ENSresolverNode = newNodeName;
+    }
+
     function getCodeSize(address _addr) constant internal returns(uint _size) {
         assembly {
             _size := extcodesize(_addr)
