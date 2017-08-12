@@ -1,7 +1,7 @@
 pragma solidity ^0.4.15;
 
-// import "github.com/ugmo04/inter-crypto/contracts/InterCrypto_Interface.sol";
-import "./InterCrypto_Interface.sol";
+import "github.com/ugmo04/inter-crypto/contracts/InterCrypto_Interface.sol";
+// import "./InterCrypto_Interface.sol";
 
 contract InterCrypto_Wallet is usingInterCrypto {
 

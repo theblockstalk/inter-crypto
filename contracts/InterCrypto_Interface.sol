@@ -33,6 +33,9 @@ contract TestRegistrar {
 // namehash('test') = "0x04f740db81dc36c853ab4205bddd785f46e79ccedca351fc6dfcbd8cc9a33dd6"
 // namehash('eth') = "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
 // namehash('intercrypto.test') = "0x9a8369851a1b569f68940f87a1ee6b276ee3d4cb037cf4d073598669c1ade6a8"
+// namehash('jackdomain.test') = "0xf2cf3eab504436e1b5a541dd9fbc5ac8547b773748bbf2bb81b350ee580702ca"
+// namehash('intercrypto.jackdomain.test') = "0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa"
+// namehash('wallet.intercrypto.jackdomain.test') = "0x41cb24b2da4620fd1f7ea359a349bbba555ca4c8274a3fca4b53f0fd5d519a4e"
 
 // Rinkeby ENS: 0xe7410170f87102df0055eb195163a03b7f2bff4a
 // .test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
@@ -63,31 +66,35 @@ contract usingInterCrypto {
     AbstractENS public abstractENS;
 
     InterCrypto_Interface public interCrypto;
+    bytes32 public ENSresolverNode;
 
     function usingInterCrypto() public {
-        if ((address(abstractENS)==0)||(getCodeSize(address(abstractENS))==0)) ENS_setNetwork();
+        setNetwork();
         updateInterCrypto();
 
     }
 
-    function ENS_setNetwork() internal returns(bool) {
+    function setNetwork() internal returns(bool) {
         if (getCodeSize(0x314159265dD8dbb310642f98f50C066173C1259b)>0){ //mainnet
             abstractENS = AbstractENS(0x314159265dD8dbb310642f98f50C066173C1259b);
+            ENSresolverNode = 0x921a56636fce44f7cbd33eed763c940f580add9ffb4da7007f8ff6e99804a7c8; // intercrypto.jacksplace.eth
             return true;
         }
         if (getCodeSize(0xe7410170f87102df0055eb195163a03b7f2bff4a)>0){ //rinkeby
             abstractENS = AbstractENS(0xe7410170f87102df0055eb195163a03b7f2bff4a);
+            ENSresolverNode = 0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa; // intercrypto.jackdomain.test
             return true;
         }
         if (getCodeSize(0x112234455c3a32fd11230c42e7bccd4a84e02010)>0){ //ropsten
             abstractENS = AbstractENS(0x112234455c3a32fd11230c42e7bccd4a84e02010);
+            ENSresolverNode = 0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa; // intercrypto.jackdomain.test
             return true;
         }
         return false;
     }
 
     function updateInterCrypto() public {
-        interCrypto = InterCrypto_Interface(abstractENS.resolver(0x9a8369851a1b569f68940f87a1ee6b276ee3d4cb037cf4d073598669c1ade6a8));
+        interCrypto = InterCrypto_Interface(abstractENS.resolver(ENSresolverNode));
     }
 
     function getCodeSize(address _addr) constant internal returns(uint _size) {
