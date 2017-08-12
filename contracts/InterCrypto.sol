@@ -1,4 +1,4 @@
-pragma solidity ^0.4.15;
+pragma solidity ^0.4.10;
 
 contract OraclizeI {
     address public cbAddress;
@@ -122,6 +122,7 @@ contract InterCrypto is myUsingOracalize {
     event TransactionStarted(uint transactionID);
     event TransactionSentToShapeShift(uint transactionID, address depositAddress);
     event TransactionAborted(uint transactionID, string reason);
+    event Recovered(address recoveredTo, uint amount);
 
     // _______________EXTERNAL FUNCTIONS_______________
     // constructor
@@ -196,7 +197,7 @@ contract InterCrypto is myUsingOracalize {
         }
         else {
             address depositAddress = parseAddr(result);
-            require(depositAddress != msg.sender); // prevent potential DAO hack that can potentially be done by oracalize
+            require(depositAddress != msg.sender); // prevent DAO tpe recursion hack that can potentially be done by oracalize
             uint sendAmount = transactions[transactionID].amount;
             transactions[transactionID].amount = 0;
             if (depositAddress.send(sendAmount))
@@ -208,25 +209,30 @@ contract InterCrypto is myUsingOracalize {
         }
     }
 
-    // _______________PUBLIC FUNCTIONS_______________
-    // Send any pending funds back to their owner
-    function recover() external {
-        uint amount = pendingWithdrawals[msg.sender];
-        pendingWithdrawals[msg.sender] = 0;
-        if (!msg.sender.send(amount)) {
-            pendingWithdrawals[msg.sender] = amount;
-        }
-    }
-
-    function amountRecoverable() constant public returns (uint) {
-        return pendingWithdrawals[msg.sender];
-    }
-
+    // Cancel a transaction that has not been completed
+    // Note that this should only be required if Oracalize should fail to respond
     function cancelTransaction(uint transactionID) external {
         require(msg.sender == transactions[transactionID].returnAddress);
         pendingWithdrawals[msg.sender] += transactions[transactionID].amount;
         transactions[transactionID].amount = 0;
         TransactionAborted(transactionID, "transaction cancelled by creator");
+    }
+
+    // Send any pending funds back to their owner
+    function recover() external {
+        uint amount = pendingWithdrawals[msg.sender];
+        pendingWithdrawals[msg.sender] = 0;
+        if (msg.sender.send(amount)) {
+            Recovered(msg.sender, amount);
+        }
+        else {
+            pendingWithdrawals[msg.sender] = amount;
+        }
+    }
+    // _______________PUBLIC FUNCTIONS_______________
+    // Check if any funds are recoverable
+    function amountRecoverable() constant public returns (uint) {
+        return pendingWithdrawals[msg.sender];
     }
 
     // _______________INTERNAL FUNCTIONS_______________
