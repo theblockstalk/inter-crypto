@@ -21,14 +21,6 @@ contract AbstractENS {
     // Logged when the TTL of a node changes
     event NewTTL(bytes32 indexed node, uint64 ttl);
 }
-
-contract TestRegistrar {
-    AbstractENS public ens;
-    bytes32 public rootNode;
-    mapping(bytes32=>uint) public expiryTimes;
-
-    function register(bytes32 subnode, address owner); // creates node = namehash(rootNode, subnode) from ensutils.js. This is what can be looked up using top level ENS contrac wth owner and resolver functions
-}
 // https://docs.ens.domains/en/latest/
 // namehash('test') = "0x04f740db81dc36c853ab4205bddd785f46e79ccedca351fc6dfcbd8cc9a33dd6"
 // namehash('eth') = "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
@@ -41,12 +33,11 @@ contract TestRegistrar {
 // .test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
 
 // Ropsten ENS: 0x112234455c3a32fd11230c42e7bccd4a84e02010
-// .eth:
-// .test:
+// .eth: 0xc19fd9004b5c9789391679de6d766b981db94610
+// .test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
 
 // Mainnet ENS: 0x314159265dD8dbb310642f98f50C066173C1259b
 // .eth: 0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef, https://etherscan.io/ens, webapp: https://registrar.ens.domains/
-
 
 contract InterCrypto_Interface {
     // EVENTS
@@ -58,7 +49,7 @@ contract InterCrypto_Interface {
     function getInterCryptoPrice() constant public returns (uint);
     function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns (uint transactionID);
     function recover() external;
-    function amountRecoverable() constant public returns (uint);
+    function recoverable(address myAddress) constant public returns (uint);
     function cancelTransaction(uint transactionID) external;
 }
 
