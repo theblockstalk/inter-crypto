@@ -6,7 +6,7 @@ import "github.com/ugmo04/inter-crypto/contracts/InterCrypto_Interface.sol";
 contract InterCrypto_Wallet is usingInterCrypto {
 
     event Deposit();
-    event WithdrawalNormal();
+    event WithdrawalNormal(address withdrawal, uint amount);
     event WithdrawalInterCrypto(uint transactionID);
 
     address owner;
@@ -35,9 +35,15 @@ contract InterCrypto_Wallet is usingInterCrypto {
         return interCrypto.getInterCryptoPrice();
     }
 
-    function withdrawalNormal() isOwner external {
-        WithdrawalNormal();
-        msg.sender.transfer(this.balance);
+    function withdrawalNormal() payable external {
+        uint amount = funds[msg.sender] + msg.value;
+        funds[msg.sender] = 0;
+        if(msg.sender.send(amount)) {
+            WithdrawalNormal(msg.sender, amount);
+        }
+        else {
+            funds[msg.sender] = amount;
+        }
     }
 
     function withdrawalInterCrypto(string _coinSymbol, string _toAddress) external payable {
@@ -53,7 +59,7 @@ contract InterCrypto_Wallet is usingInterCrypto {
     }
 
     function intercrypto_amountRecoverable() isOwner public constant returns (uint) {
-        return interCrypto.amountRecoverable();
+        return interCrypto.recoverable(this);
     }
 
     function kill() isOwner external {
