@@ -113,10 +113,10 @@ contract InterCrypto is myUsingOracalize {
         uint amount;
     }
 
-    mapping (uint => Transaction) transactions;
+    mapping (uint => Transaction) public transactions;
     uint transactionCount = 0;
     mapping (bytes32 => uint) oracalizeMyId2transactionID;
-    mapping (address => uint) pendingWithdrawals;
+    mapping (address => uint) public recoverable;
 
     // _______________EVENTS_______________
     event TransactionStarted(uint transactionID);
@@ -158,7 +158,6 @@ contract InterCrypto is myUsingOracalize {
         uint oracalizePrice = getInterCryptoPrice();
 
         transactionID = transactionCount++;
-        // transactionCount++;
 
         if (msg.value > oracalizePrice) {
             transactions[transactionID] = Transaction(msg.sender, msg.value-oracalizePrice);
@@ -170,7 +169,7 @@ contract InterCrypto is myUsingOracalize {
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData);
             if (myQueryId == 0) {
                 TransactionAborted(transactionID, "unexpectedly high Oracalize price when calling oracalize_query");
-                pendingWithdrawals[msg.sender] += msg.value-oracalizePrice;
+                recoverable[msg.sender] += msg.value-oracalizePrice;
                 transactions[transactionID].amount = 0;
                 return;
             }
@@ -180,19 +179,19 @@ contract InterCrypto is myUsingOracalize {
         else {
             TransactionAborted(transactionID, "Not enough ETH sent to cover Oracalize fee");
             transactions[transactionID].amount = 0;
-            pendingWithdrawals[msg.sender] += msg.value;
+            recoverable[msg.sender] += msg.value;
         }
     }
 
     // Callback function for Oracalize
     function __callback(bytes32 myid, string result) {
-        if (msg.sender != oraclize.cbAddress()) revert();
+        require(msg.sender != oraclize.cbAddress());
 
         uint transactionID = oracalizeMyId2transactionID[myid];
 
         if( bytes(result).length == 0 ) {
             TransactionAborted(transactionID, "Oracalize return value was invalid");
-            pendingWithdrawals[transactions[transactionID].returnAddress] += transactions[transactionID].amount;
+            recoverable[transactions[transactionID].returnAddress] += transactions[transactionID].amount;
             transactions[transactionID].amount = 0;
         }
         else {
@@ -204,7 +203,7 @@ contract InterCrypto is myUsingOracalize {
                 TransactionSentToShapeShift(transactionID, depositAddress);
             else {
                 TransactionAborted(transactionID, "transaction to address returned by Oracalize failed");
-                pendingWithdrawals[transactions[transactionID].returnAddress] += sendAmount;
+                recoverable[transactions[transactionID].returnAddress] += sendAmount;
             }
         }
     }
@@ -213,27 +212,24 @@ contract InterCrypto is myUsingOracalize {
     // Note that this should only be required if Oracalize should fail to respond
     function cancelTransaction(uint transactionID) external {
         require(msg.sender == transactions[transactionID].returnAddress);
-        pendingWithdrawals[msg.sender] += transactions[transactionID].amount;
+        recoverable[msg.sender] += transactions[transactionID].amount;
         transactions[transactionID].amount = 0;
         TransactionAborted(transactionID, "transaction cancelled by creator");
     }
 
     // Send any pending funds back to their owner
     function recover() external {
-        uint amount = pendingWithdrawals[msg.sender];
-        pendingWithdrawals[msg.sender] = 0;
+        uint amount = recoverable[msg.sender];
+        recoverable[msg.sender] = 0;
         if (msg.sender.send(amount)) {
             Recovered(msg.sender, amount);
         }
         else {
-            pendingWithdrawals[msg.sender] = amount;
+            recoverable[msg.sender] = amount;
         }
     }
     // _______________PUBLIC FUNCTIONS_______________
-    // Check if any funds are recoverable
-    function amountRecoverable() constant public returns (uint) {
-        return pendingWithdrawals[msg.sender];
-    }
+
 
     // _______________INTERNAL FUNCTIONS_______________
     function concatBytes(bytes b1, bytes b2, bytes b3, bytes b4, bytes b5, bytes b6, bytes b7) internal returns (bytes bFinal) {
