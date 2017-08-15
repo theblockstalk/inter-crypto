@@ -117,7 +117,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
     // _______________EVENTS_______________
     event TransactionStarted(uint indexed transactionID);
-    event TransactionSentToShapeShift(uint indexed transactionID, address indexed depositAddress);
+    event TransactionSentToShapeShift(uint indexed transactionID, address indexed returnAddress, address indexed depositAddress, uint amount);
     event TransactionAborted(uint indexed transactionID, string reason);
     event Recovered(address indexed recoveredTo, uint amount);
 
@@ -138,49 +138,14 @@ contract InterCrypto is Ownable, myUsingOracalize {
         return oraclize.getPrice('URL');
     }
 
-    // Request for a ShapeShift transaction to be made
-    function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns(uint transactionID) {
-        // Example arguments:
-        // "ltc", "LbZcDdMeP96ko85H21TQii98YFF9RgZg3D"   Litecoin
-        // "btc", "1L8oRijgmkfcZDYA21b73b6DewLtyYs87s"   Bitcoin
-        // "dash", "Xoopows17idkTwNrMZuySXBwQDorsezQAx"  Dash
-        // "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"  ZCash
-        // "doge" "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
-        // See https://info.shapeshift.io/about
-        // Test symbol pairs using ShapeShift API before using it with InterCrypto
+    // Create a cryptocurrency conversion using Oracalize and Shapeshift return address = msg.sender
+    function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns(uint) {
+        return engine(_coinSymbol, _toAddress, msg.sender);
+    }
 
-        transactionID = transactionCount++;
-
-        if (!isValidateName(_coinSymbol, 6) || !isValidateName(_toAddress, 120)) { // Waves smbol is "waves" , Monero integrated addresses are 106 characters
-            TransactionAborted(transactionID, "input parameters are too long or contain invalid symbols");
-            recoverable[msg.sender] += msg.value;
-            return;
-        }
-
-        uint oracalizePrice = getInterCryptoPrice();
-
-        if (msg.value > oracalizePrice) {
-            transactions[transactionID] = Transaction(msg.sender, msg.value-oracalizePrice);
-
-            // Create post data string like ' {"withdrawal":"LbZcDdMeP96ko85H21TQii98YFF9RgZg3D","pair":"eth_ltc","returnAddress":"558999ff2e0daefcb4fcded4c89e07fdf9ccb56c"}'
-            string memory postData = createShapeShiftTransactionPost(_coinSymbol, _toAddress);
-
-            // TODO: send custom gasLimit for retrn transaction equal to the exact cost of __callback. Note that this should only be donewhen the contract is finalized
-            bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData);
-            if (myQueryId == 0) {
-                TransactionAborted(transactionID, "unexpectedly high Oracalize price when calling oracalize_query");
-                recoverable[msg.sender] += msg.value-oracalizePrice;
-                transactions[transactionID].amount = 0;
-                return;
-            }
-            oracalizeMyId2transactionID[myQueryId] = transactionID;
-            TransactionStarted(transactionID);
-        }
-        else {
-            TransactionAborted(transactionID, "Not enough ETH sent to cover Oracalize fee");
-            transactions[transactionID].amount = 0;
-            recoverable[msg.sender] += msg.value;
-        }
+    // Create a cryptocurrency conversion using Oracalize and custom Shapeshift return address
+    function sendToOtherBlockchain(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint) {
+        return engine(_coinSymbol, _toAddress, _returnAddress);
     }
 
     // Callback function for Oracalize
@@ -190,7 +155,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
         uint transactionID = oracalizeMyId2transactionID[myid];
 
         if( bytes(result).length == 0 ) {
-            TransactionAborted(transactionID, "Oracalize return value was invalid");
+            TransactionAborted(transactionID, "Oracalize return value was invalid, this is probably due to incorrect sendToOtherBlockchain() argments");
             recoverable[transactions[transactionID].returnAddress] += transactions[transactionID].amount;
             transactions[transactionID].amount = 0;
         }
@@ -200,7 +165,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
             uint sendAmount = transactions[transactionID].amount;
             transactions[transactionID].amount = 0;
             if (depositAddress.send(sendAmount))
-                TransactionSentToShapeShift(transactionID, depositAddress);
+                TransactionSentToShapeShift(transactionID, transactions[transactionID].returnAddress, depositAddress, sendAmount);
             else {
                 TransactionAborted(transactionID, "transaction to address returned by Oracalize failed");
                 recoverable[transactions[transactionID].returnAddress] += sendAmount;
@@ -232,6 +197,51 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
 
     // _______________INTERNAL FUNCTIONS_______________
+    // Request for a ShapeShift transaction to be made
+    function engine(string _coinSymbol, string _toAddress, address _returnAddress) internal returns(uint transactionID) {
+        // Example arguments:
+        // "ltc", "LbZcDdMeP96ko85H21TQii98YFF9RgZg3D"   Litecoin
+        // "btc", "1L8oRijgmkfcZDYA21b73b6DewLtyYs87s"   Bitcoin
+        // "dash", "Xoopows17idkTwNrMZuySXBwQDorsezQAx"  Dash
+        // "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"  ZCash
+        // "doge" "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
+        // See https://info.shapeshift.io/about
+        // Test symbol pairs using ShapeShift API whenever possible before using it with InterCrypto
+
+        transactionID = transactionCount++;
+
+        if (!isValidateName(_coinSymbol, 6) || !isValidateName(_toAddress, 120)) { // Waves smbol is "waves" , Monero integrated addresses are 106 characters
+            TransactionAborted(transactionID, "input parameters are too long or contain invalid symbols");
+            recoverable[msg.sender] += msg.value;
+            return;
+        }
+
+        uint oracalizePrice = getInterCryptoPrice();
+
+        if (msg.value > oracalizePrice) {
+            transactions[transactionID] = Transaction(_returnAddress, msg.value-oracalizePrice);
+
+            // Create post data string like ' {"withdrawal":"LbZcDdMeP96ko85H21TQii98YFF9RgZg3D","pair":"eth_ltc","returnAddress":"558999ff2e0daefcb4fcded4c89e07fdf9ccb56c"}'
+            string memory postData = createShapeShiftTransactionPost(_coinSymbol, _toAddress);
+
+            // TODO: send custom gasLimit for retrn transaction equal to the exact cost of __callback. Note that this should only be donewhen the contract is finalized
+            bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData);
+            if (myQueryId == 0) {
+                TransactionAborted(transactionID, "unexpectedly high Oracalize price when calling oracalize_query");
+                recoverable[msg.sender] += msg.value-oracalizePrice;
+                transactions[transactionID].amount = 0;
+                return;
+            }
+            oracalizeMyId2transactionID[myQueryId] = transactionID;
+            TransactionStarted(transactionID);
+        }
+        else {
+            TransactionAborted(transactionID, "Not enough Ether sent to cover Oracalize fee");
+            transactions[transactionID].amount = 0;
+            recoverable[msg.sender] += msg.value;
+        }
+    }
+
     // Adapted from https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol
     function isValidateName(string _parameter, uint maxSize) constant internal returns (bool allowed) {
         bytes memory parameterBytes = bytes(_parameter);
