@@ -251,10 +251,10 @@ contract InterCrypto is Ownable, myUsingOracalize {
      * @param _coinSymbol The coinsymbol of the other blockchain to be used by ShapeShift. See engine() function for more details.
      * @param _toAddress The address on the other blockchain that the converted cryptocurrency will be sent to.
      * Example first two arguments:
-     * "ltc", "LbZcDdMeP96ko85H21TQii98YFF9RgZg3D"   Litecoin
-     * "btc", "1L8oRijgmkfcZDYA21b73b6DewLtyYs87s"   Bitcoin
-     * "dash", "Xoopows17idkTwNrMZuySXBwQDorsezQAx"  Dash
-     * "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"  ZCash
+     * "ltc", "LbZcDdMeP96ko85H21TQii98YFF9RgZg3D"    Litecoin
+     * "btc", "1L8oRijgmkfcZDYA21b73b6DewLtyYs87s"    Bitcoin
+     * "dash", "Xoopows17idkTwNrMZuySXBwQDorsezQAx"   Dash
+     * "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"   ZCash
      * "doge", "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
      * Test symbol pairs using ShapeShift API (shapeshift.io/validateAddress/[address]/[coinSymbol]) or by creating a test
      * transaction on https://shapeshift.io first whenever possible before using it with InterCrypto.
@@ -300,7 +300,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
     /**
      * Returns true if a given string contains only numbers and letters, and is below a maximum length.
      * @param _parameter String to be checked.
-     * @param _toAddress The address on the other blockchain that the converted cryptocurrency will be sent to.
+     * @param maxSize The maximum allowable sting character length.
      */
     function isValidateParameter(string _parameter, uint maxSize) constant internal returns (bool allowed) {
         bytes memory parameterBytes = bytes(_parameter);
