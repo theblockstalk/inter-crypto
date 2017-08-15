@@ -2,8 +2,9 @@ pragma solidity ^0.4.15;
 
 import "https://github.com/OpenZeppelin/zeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract OraclizeI {
-    address public cbAddress;
+interface OraclizeI {
+    // address public cbAddress;
+    function cbAddress() constant returns (address); // Reads public variable cbAddress
     function query(uint _timestamp, string _datasource, string _arg) payable returns (bytes32 _id);
     function query_withGasLimit(uint _timestamp, string _datasource, string _arg, uint _gaslimit) payable returns (bytes32 _id);
     function query2(uint _timestamp, string _datasource, string _arg1, string _arg2) payable returns (bytes32 _id);
@@ -19,7 +20,7 @@ contract OraclizeI {
     function randomDS_getSessionPubKeyHash() returns(bytes32);
 }
 
-contract OraclizeAddrResolverI {
+interface OraclizeAddrResolverI {
     function getAddress() returns (address _addr);
 }
 
@@ -206,11 +207,12 @@ contract InterCrypto is Ownable, myUsingOracalize {
         // "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"  ZCash
         // "doge" "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
         // See https://info.shapeshift.io/about
-        // Test symbol pairs using ShapeShift API whenever possible before using it with InterCrypto
+        // Test symbol pairs using ShapeShift API (shapeshift.io/validateAddress/[address]/[coinSymbol]) or by creating a test
+        // transaction first whenever possible before using it with InterCrypto
 
         transactionID = transactionCount++;
 
-        if (!isValidateName(_coinSymbol, 6) || !isValidateName(_toAddress, 120)) { // Waves smbol is "waves" , Monero integrated addresses are 106 characters
+        if (!isValidateParameter(_coinSymbol, 6) || !isValidateParameter(_toAddress, 120)) { // Waves smbol is "waves" , Monero integrated addresses are 106 characters
             TransactionAborted(transactionID, "input parameters are too long or contain invalid symbols");
             recoverable[msg.sender] += msg.value;
             return;
@@ -243,7 +245,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
     }
 
     // Adapted from https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol
-    function isValidateName(string _parameter, uint maxSize) constant internal returns (bool allowed) {
+    function isValidateParameter(string _parameter, uint maxSize) constant internal returns (bool allowed) {
         bytes memory parameterBytes = bytes(_parameter);
         uint lengthBytes = parameterBytes.length;
         if (lengthBytes < 1 ||

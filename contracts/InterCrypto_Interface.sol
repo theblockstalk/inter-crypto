@@ -1,6 +1,8 @@
 pragma solidity ^0.4.15;
 
-contract AbstractENS {
+import "https://github.com/OpenZeppelin/zeppelin-solidity/contracts/ownership/Ownable.sol";
+
+interface AbstractENS {
     function owner(bytes32 node) constant returns(address);
     function resolver(bytes32 node) constant returns(address);
     function ttl(bytes32 node) constant returns(uint64);
@@ -39,21 +41,23 @@ contract AbstractENS {
 // Mainnet ENS: 0x314159265dD8dbb310642f98f50C066173C1259b
 // .eth: 0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef, https://etherscan.io/ens, webapp: https://registrar.ens.domains/
 
-contract InterCrypto_Interface {
+interface InterCrypto_Interface {
     // EVENTS
-    event TransactionStarted(uint transactionID);
-    event TransactionSentToShapeShift(uint transactionID, address depositAddress);
-    event TransactionAborted(uint transactionID, string reason);
+    event TransactionStarted(uint indexed transactionID);
+    event TransactionSentToShapeShift(uint indexed transactionID, address indexed returnAddress, address indexed depositAddress, uint amount);
+    event TransactionAborted(uint indexed transactionID, string reason);
+    event Recovered(address indexed recoveredTo, uint amount);
 
     // FUNCTIONS
     function getInterCryptoPrice() constant public returns (uint);
     function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns (uint transactionID);
+    function sendToOtherBlockchain(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint transactionID);
     function recover() external;
     function recoverable(address myAddress) constant public returns (uint);
     function cancelTransaction(uint transactionID) external;
 }
 
-contract usingInterCrypto {
+contract usingInterCrypto is Ownable {
     AbstractENS public abstractENS;
 
     InterCrypto_Interface public interCrypto;
@@ -69,26 +73,25 @@ contract usingInterCrypto {
         if (getCodeSize(0x314159265dD8dbb310642f98f50C066173C1259b)>0){ //mainnet
             abstractENS = AbstractENS(0x314159265dD8dbb310642f98f50C066173C1259b);
             ENSresolverNode = 0x921a56636fce44f7cbd33eed763c940f580add9ffb4da7007f8ff6e99804a7c8; // intercrypto.jacksplace.eth
-            return true;
         }
-        if (getCodeSize(0xe7410170f87102df0055eb195163a03b7f2bff4a)>0){ //rinkeby
+        else if (getCodeSize(0xe7410170f87102df0055eb195163a03b7f2bff4a)>0){ //rinkeby
             abstractENS = AbstractENS(0xe7410170f87102df0055eb195163a03b7f2bff4a);
             ENSresolverNode = 0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa; // intercrypto.jackdomain.test
-            return true;
         }
-        if (getCodeSize(0x112234455c3a32fd11230c42e7bccd4a84e02010)>0){ //ropsten
+        else if (getCodeSize(0x112234455c3a32fd11230c42e7bccd4a84e02010)>0){ //ropsten
             abstractENS = AbstractENS(0x112234455c3a32fd11230c42e7bccd4a84e02010);
             ENSresolverNode = 0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa; // intercrypto.jackdomain.test
-            return true;
         }
-        return false;
+        else {
+            revert();
+        }
     }
 
     function updateInterCrypto() public {
         interCrypto = InterCrypto_Interface(abstractENS.resolver(ENSresolverNode));
     }
 
-    function updateENSnode(bytes32 newNodeName) public {
+    function updateENSnode(bytes32 newNodeName) onlyOwner public {
         ENSresolverNode = newNodeName;
     }
 
