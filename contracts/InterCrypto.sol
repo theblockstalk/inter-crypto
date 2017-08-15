@@ -25,10 +25,10 @@ interface OraclizeAddrResolverI {
 }
 
 // this is a reduced and optimize version of the usingOracalize contract in https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.4.sol
-contract myUsingOracalize {
+contract myUsingOracalize is Ownable {
     OraclizeAddrResolverI OAR;
-
     OraclizeI public oraclize;
+    uint public oracalize_gaslimit = 100000;
 
     function myUsingOracalize() {
         oraclize_setNetwork();
@@ -37,6 +37,20 @@ contract myUsingOracalize {
 
     function update_oracalize() public {
         oraclize = OraclizeI(OAR.getAddress());
+    }
+
+    function oraclize_query(string datasource, string arg1, string arg2) internal returns (bytes32 id) {
+        uint price = oraclize.getPrice(datasource, oracalize_gaslimit);
+        if (price > 1 ether + tx.gasprice*oracalize_gaslimit) return 0; // unexpectedly high price
+        return oraclize.query2_withGasLimit.value(price)(0, datasource, arg1, arg2, oracalize_gaslimit);
+    }
+
+    function oraclize_getPrice(string datasource) internal returns (uint) {
+        return oraclize.getPrice(datasource, oracalize_gaslimit);
+    }
+
+    function setGasLimit(uint _newLimit) onlyOwner public {
+        oracalize_gaslimit = _newLimit;
     }
 
     function oraclize_setNetwork() internal {
@@ -64,12 +78,6 @@ contract myUsingOracalize {
         else {
             revert();
         }
-    }
-
-    function oraclize_query(string datasource, string arg1, string arg2) internal returns (bytes32 id){
-        uint price = oraclize.getPrice(datasource);
-        if (price > 1 ether + tx.gasprice*200000) return 0; // unexpectedly high price
-        return oraclize.query2.value(price)(0, datasource, arg1, arg2);
     }
 
     function getCodeSize(address _addr) constant internal returns(uint _size) {
@@ -136,7 +144,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
     // Return the price of using Oracalize
     function getInterCryptoPrice() constant public returns (uint) {
-        return oraclize.getPrice('URL');
+        return oraclize_getPrice('URL');
     }
 
     // Create a cryptocurrency conversion using Oracalize and Shapeshift return address = msg.sender
