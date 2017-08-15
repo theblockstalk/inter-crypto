@@ -140,12 +140,12 @@ contract InterCrypto is Ownable, myUsingOracalize {
     }
 
     // Create a cryptocurrency conversion using Oracalize and Shapeshift return address = msg.sender
-    function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns(uint) {
+    function sendToOtherBlockchain1(string _coinSymbol, string _toAddress) external payable returns(uint) {
         return engine(_coinSymbol, _toAddress, msg.sender);
     }
 
     // Create a cryptocurrency conversion using Oracalize and custom Shapeshift return address
-    function sendToOtherBlockchain(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint) {
+    function sendToOtherBlockchain2(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint) {
         return engine(_coinSymbol, _toAddress, _returnAddress);
     }
 

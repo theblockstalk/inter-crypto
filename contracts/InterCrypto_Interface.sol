@@ -50,8 +50,8 @@ interface InterCrypto_Interface {
 
     // FUNCTIONS
     function getInterCryptoPrice() constant public returns (uint);
-    function sendToOtherBlockchain(string _coinSymbol, string _toAddress) external payable returns (uint transactionID);
-    function sendToOtherBlockchain(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint transactionID);
+    function sendToOtherBlockchain1(string _coinSymbol, string _toAddress) external payable returns (uint transactionID);
+    function sendToOtherBlockchain2(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint transactionID);
     function recover() external;
     function recoverable(address myAddress) constant public returns (uint);
     function cancelTransaction(uint transactionID) external;
@@ -101,4 +101,13 @@ contract usingInterCrypto is Ownable {
         }
         return _size;
     }
+
+    function intercrypto_sendToOtherBlockchain(uint amount, string _coinSymbol, string _toAddress) internal returns (uint transactionID) {
+        return interCrypto.sendToOtherBlockchain1.value(amount)(_coinSymbol, _toAddress);
+    }
+
+    function intercrypto_sendToOtherBlockchain(uint amount, string _coinSymbol, string _toAddress, address _returnAddress) internal returns(uint transactionID) {
+        return interCrypto.sendToOtherBlockchain2.value(amount)(_coinSymbol, _toAddress, _returnAddress);
+    }
+
 }

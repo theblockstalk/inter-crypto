@@ -9,20 +9,11 @@ contract InterCrypto_Wallet is usingInterCrypto {
     event WithdrawalNormal(address withdrawal, uint amount);
     event WithdrawalInterCrypto(uint transactionID);
 
-    address owner;
-    mapping (address => uint) funds;
+    mapping (address => uint) public funds;
 
-    modifier isOwner() {
-        require(msg.sender == owner);
-        _;
-    }
+    function InterCrypto_Wallet() {}
 
-    function InterCrypto_Wallet() {
-        owner = msg.sender;
-    }
-
-    function () payable {
-    }
+    function () payable {}
 
     function deposit() payable {
       if (msg.value > 0) {
@@ -49,20 +40,20 @@ contract InterCrypto_Wallet is usingInterCrypto {
     function withdrawalInterCrypto(string _coinSymbol, string _toAddress) external payable {
         uint amount = funds[msg.sender];
         funds[msg.sender] = 0;
-        uint transactionID = interCrypto.sendToOtherBlockchain.value(amount + msg.value)(_coinSymbol, _toAddress);
+        uint transactionID = intercrypto_sendToOtherBlockchain(amount + msg.value, _coinSymbol, _toAddress);
         WithdrawalInterCrypto(transactionID);
     }
 
 
-    function intercrypto_Recover() isOwner external {
+    function intercrypto_Recover() onlyOwner external {
         interCrypto.recover();
     }
 
-    function intercrypto_amountRecoverable() isOwner public constant returns (uint) {
+    function intercrypto_Recoverable() onlyOwner public constant returns (uint) {
         return interCrypto.recoverable(this);
     }
 
-    function kill() isOwner external {
+    function kill() onlyOwner external {
         selfdestruct(owner);
     }
 }
