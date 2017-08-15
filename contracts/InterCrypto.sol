@@ -119,10 +119,10 @@ contract InterCrypto is myUsingOracalize {
     mapping (address => uint) public recoverable;
 
     // _______________EVENTS_______________
-    event TransactionStarted(uint transactionID);
-    event TransactionSentToShapeShift(uint transactionID, address depositAddress);
-    event TransactionAborted(uint transactionID, string reason);
-    event Recovered(address recoveredTo, uint amount);
+    event TransactionStarted(uint indexed transactionID);
+    event TransactionSentToShapeShift(uint indexed transactionID, address indexed depositAddress);
+    event TransactionAborted(uint indexed transactionID, string reason);
+    event Recovered(address indexed recoveredTo, uint amount);
 
     // _______________EXTERNAL FUNCTIONS_______________
     // constructor
