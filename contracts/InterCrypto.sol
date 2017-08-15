@@ -154,22 +154,23 @@ contract InterCrypto is Ownable, myUsingOracalize {
         if (msg.sender != oraclize.cbAddress()) revert();
 
         uint transactionID = oracalizeMyId2transactionID[myid];
+        Transaction memory transaction = transactions[transactionID];
 
         if( bytes(result).length == 0 ) {
             TransactionAborted(transactionID, "Oracalize return value was invalid, this is probably due to incorrect sendToOtherBlockchain() argments");
-            recoverable[transactions[transactionID].returnAddress] += transactions[transactionID].amount;
-            transactions[transactionID].amount = 0;
+            recoverable[transaction.returnAddress] += transaction.amount;
+            transaction.amount = 0;
         }
         else {
             address depositAddress = parseAddr(result);
             require(depositAddress != msg.sender); // prevent DAO tpe recursion hack that can potentially be done by oracalize
-            uint sendAmount = transactions[transactionID].amount;
-            transactions[transactionID].amount = 0;
+            uint sendAmount = transaction.amount;
+            transaction.amount = 0;
             if (depositAddress.send(sendAmount))
-                TransactionSentToShapeShift(transactionID, transactions[transactionID].returnAddress, depositAddress, sendAmount);
+                TransactionSentToShapeShift(transactionID, transaction.returnAddress, depositAddress, sendAmount);
             else {
                 TransactionAborted(transactionID, "transaction to address returned by Oracalize failed");
-                recoverable[transactions[transactionID].returnAddress] += sendAmount;
+                recoverable[transaction.returnAddress] += sendAmount;
             }
         }
     }
@@ -177,10 +178,14 @@ contract InterCrypto is Ownable, myUsingOracalize {
     // Cancel a transaction that has not been completed
     // Note that this should only be required if Oracalize should fail to respond
     function cancelTransaction(uint transactionID) external {
-        require(msg.sender == transactions[transactionID].returnAddress);
-        recoverable[msg.sender] += transactions[transactionID].amount;
-        transactions[transactionID].amount = 0;
-        TransactionAborted(transactionID, "transaction cancelled by creator");
+        Transaction memory transaction = transactions[transactionID];
+
+        if (transaction.amount > 0) {
+            require(msg.sender == transaction.returnAddress);
+            recoverable[msg.sender] += transaction.amount;
+            transaction.amount = 0;
+            TransactionAborted(transactionID, "transaction cancelled by creator");
+        }
     }
 
     // Send any pending funds back to their owner
@@ -205,7 +210,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
         // "btc", "1L8oRijgmkfcZDYA21b73b6DewLtyYs87s"   Bitcoin
         // "dash", "Xoopows17idkTwNrMZuySXBwQDorsezQAx"  Dash
         // "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"  ZCash
-        // "doge" "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
+        // "doge", "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
         // See https://info.shapeshift.io/about
         // Test symbol pairs using ShapeShift API (shapeshift.io/validateAddress/[address]/[coinSymbol]) or by creating a test
         // transaction first whenever possible before using it with InterCrypto
@@ -221,17 +226,19 @@ contract InterCrypto is Ownable, myUsingOracalize {
         uint oracalizePrice = getInterCryptoPrice();
 
         if (msg.value > oracalizePrice) {
-            transactions[transactionID] = Transaction(_returnAddress, msg.value-oracalizePrice);
+            Transaction memory transaction = Transaction(_returnAddress, msg.value-oracalizePrice);
+            transactions[transactionID] = transaction;
 
             // Create post data string like ' {"withdrawal":"LbZcDdMeP96ko85H21TQii98YFF9RgZg3D","pair":"eth_ltc","returnAddress":"558999ff2e0daefcb4fcded4c89e07fdf9ccb56c"}'
             string memory postData = createShapeShiftTransactionPost(_coinSymbol, _toAddress);
 
             // TODO: send custom gasLimit for retrn transaction equal to the exact cost of __callback. Note that this should only be donewhen the contract is finalized
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData);
+
             if (myQueryId == 0) {
                 TransactionAborted(transactionID, "unexpectedly high Oracalize price when calling oracalize_query");
                 recoverable[msg.sender] += msg.value-oracalizePrice;
-                transactions[transactionID].amount = 0;
+                transaction.amount = 0;
                 return;
             }
             oracalizeMyId2transactionID[myQueryId] = transactionID;
@@ -239,7 +246,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
         }
         else {
             TransactionAborted(transactionID, "Not enough Ether sent to cover Oracalize fee");
-            transactions[transactionID].amount = 0;
+            // transactions[transactionID].amount = 0;
             recoverable[msg.sender] += msg.value;
         }
     }
