@@ -1,5 +1,7 @@
 pragma solidity ^0.4.15;
 
+import "https://github.com/OpenZeppelin/zeppelin-solidity/contracts/ownership/Ownable.sol";
+
 contract OraclizeI {
     address public cbAddress;
     function query(uint _timestamp, string _datasource, string _arg) payable returns (bytes32 _id);
@@ -23,7 +25,7 @@ contract OraclizeAddrResolverI {
 
 // this is a reduced and optimize version of the usingOracalize contract in https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.4.sol
 contract myUsingOracalize {
-    OraclizeAddrResolverI public OAR;
+    OraclizeAddrResolverI OAR;
 
     OraclizeI public oraclize;
 
@@ -57,6 +59,9 @@ contract myUsingOracalize {
         }
         else if (getCodeSize(0x51efaF4c8B3C9AfBD5aB9F4bbC82784Ab6ef8fAA)>0){ //browser-solidity
             OAR = OraclizeAddrResolverI(0x51efaF4c8B3C9AfBD5aB9F4bbC82784Ab6ef8fAA);
+        }
+        else {
+            revert();
         }
     }
 
@@ -96,10 +101,8 @@ contract myUsingOracalize {
 
 /// @title Inter-crypto currency converter
 /// @author Jack Tanner - <jnt16@ic.ac.uk>
-contract InterCrypto is myUsingOracalize {
+contract InterCrypto is Ownable, myUsingOracalize {
     // _______________VARIABLES_______________
-    address owner;
-
     struct Transaction {
         address returnAddress;
         uint amount;
@@ -118,13 +121,10 @@ contract InterCrypto is myUsingOracalize {
 
     // _______________EXTERNAL FUNCTIONS_______________
     // constructor
-    function InterCrypto() {
-        owner = msg.sender;
-    }
+    function InterCrypto() {}
 
     // suicide function
-    function kill() external {
-        if (msg.sender == owner)
+    function kill() onlyOwner external {
         selfdestruct(owner);
     }
 
@@ -145,7 +145,7 @@ contract InterCrypto is myUsingOracalize {
         // "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"  ZCash
         // "doge" "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
         // See https://info.shapeshift.io/about
-        // Test symbol pairs using POST transaction with ShapeShift API before using it with InterCrypto
+        // Test symbol pairs using ShapeShift API before using it with InterCrypto
 
         uint oracalizePrice = getInterCryptoPrice();
 
