@@ -113,7 +113,7 @@ contract InterCrypto is myUsingOracalize {
         uint amount;
     }
 
-    mapping (uint => Transaction) transactions;
+    mapping (uint => Transaction) public transactions;
     uint transactionCount = 0;
     mapping (bytes32 => uint) oracalizeMyId2transactionID;
     mapping (address => uint) public recoverable;
