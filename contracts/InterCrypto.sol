@@ -23,7 +23,7 @@ contract OraclizeAddrResolverI {
 
 // this is a reduced and optimize version of the usingOracalize contract in https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.4.sol
 contract myUsingOracalize {
-    OraclizeAddrResolverI OAR;
+    OraclizeAddrResolverI  OAR;
 
     OraclizeI oraclize;
 
@@ -113,7 +113,7 @@ contract InterCrypto is myUsingOracalize {
         uint amount;
     }
 
-    mapping (uint => Transaction) public transactions;
+    mapping (uint => Transaction) transactions;
     uint transactionCount = 0;
     mapping (bytes32 => uint) oracalizeMyId2transactionID;
     mapping (address => uint) public recoverable;
@@ -185,7 +185,7 @@ contract InterCrypto is myUsingOracalize {
 
     // Callback function for Oracalize
     function __callback(bytes32 myid, string result) {
-        require(msg.sender != oraclize.cbAddress());
+        if (msg.sender != oraclize.cbAddress()) revert();
 
         uint transactionID = oracalizeMyId2transactionID[myid];
 
