@@ -78,6 +78,8 @@ contract myUsingOracalize {
         return _size;
     }
 
+    // This will not throw error on wrong input, but instead consume large and unknown amount of gas
+    // This should never occure as it's use with the ShapeShift deposit return value is checked before calling function
     function parseAddr(string _a) internal returns (address){
         bytes memory tmp = bytes(_a);
         uint160 iaddr = 0;
@@ -147,9 +149,15 @@ contract InterCrypto is Ownable, myUsingOracalize {
         // See https://info.shapeshift.io/about
         // Test symbol pairs using ShapeShift API before using it with InterCrypto
 
-        uint oracalizePrice = getInterCryptoPrice();
-
         transactionID = transactionCount++;
+
+        if (!isValidateName(_coinSymbol, 6) || !isValidateName(_toAddress, 120)) { // Waves smbol is "waves" , Monero integrated addresses are 106 characters
+            TransactionAborted(transactionID, "input parameters are too long or contain invalid symbols");
+            recoverable[msg.sender] += msg.value;
+            return;
+        }
+
+        uint oracalizePrice = getInterCryptoPrice();
 
         if (msg.value > oracalizePrice) {
             transactions[transactionID] = Transaction(msg.sender, msg.value-oracalizePrice);
@@ -224,6 +232,28 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
 
     // _______________INTERNAL FUNCTIONS_______________
+    // Adapted from https://github.com/kieranelby/KingOfTheEtherThrone/blob/master/contracts/KingOfTheEtherThrone.sol
+    function isValidateName(string _parameter, uint maxSize) constant internal returns (bool allowed) {
+        bytes memory parameterBytes = bytes(_parameter);
+        uint lengthBytes = parameterBytes.length;
+        if (lengthBytes < 1 ||
+            lengthBytes > maxSize) {
+            return false;
+        }
+
+        for (uint i = 0; i < lengthBytes; i++) {
+            byte b = parameterBytes[i];
+            if ( !(
+                (b >= 48 && b <= 57) || // 0 - 9
+                (b >= 65 && b <= 90) || // A - Z
+                (b >= 97 && b <= 122)   // a - z
+            )) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     function concatBytes(bytes b1, bytes b2, bytes b3, bytes b4, bytes b5, bytes b6, bytes b7) internal returns (bytes bFinal) {
         bFinal = new bytes(b1.length + b2.length + b3.length + b4.length + b5.length + b6.length + b7.length);
 
