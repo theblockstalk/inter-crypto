@@ -35,7 +35,7 @@ contract myUsingOracalize is Ownable {
         update_oracalize();
     }
 
-    function update_oracalize() public {
+    function update_oracalize() onlyOwner public {
         oraclize = OraclizeI(OAR.getAddress());
     }
 
@@ -300,7 +300,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
     /**
      * Returns true if a given string contains only numbers and letters, and is below a maximum length.
      * @param _parameter String to be checked.
-     * @param maxSize The maximum allowable sting character length.
+     * @param maxSize The maximum allowable sting character length. The address on the other blockchain that the converted cryptocurrency will be sent to.
      */
     function isValidateParameter(string _parameter, uint maxSize) constant internal returns (bool allowed) {
         bytes memory parameterBytes = bytes(_parameter);

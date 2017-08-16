@@ -87,7 +87,7 @@ contract usingInterCrypto is Ownable {
         }
     }
 
-    function updateInterCrypto() public {
+    function updateInterCrypto() onlyOwner public {
         interCrypto = InterCrypto_Interface(abstractENS.resolver(ENSresolverNode));
     }
 
