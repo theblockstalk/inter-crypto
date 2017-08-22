@@ -182,23 +182,23 @@ contract InterCrypto is Ownable, myUsingOracalize {
         if (msg.sender != oraclize.cbAddress()) revert();
 
         uint conversionID = oracalizeMyId2conversionID[myid];
-        Conversion memory conversion = conversions[conversionID];
 
         if( bytes(result).length == 0 ) {
             ConversionAborted(conversionID, "Oracalize return value was invalid, this is probably due to incorrect convert() argments");
-            recoverable[conversion.returnAddress] += conversion.amount;
-            conversion.amount = 0;
+            recoverable[conversions[conversionID].returnAddress] += conversions[conversionID].amount;
+            conversions[conversionID].amount = 0;
         }
         else {
             address depositAddress = parseAddr(result);
             require(depositAddress != msg.sender); // prevent DAO tpe re-entracy vulnerability that can potentially be done by Oracalize
-            uint sendAmount = conversion.amount;
-            conversion.amount = 0; // TODO: THIS IS NOT WORKING...
-            if (depositAddress.send(sendAmount))
-                ConversionSentToShapeShift(conversionID, conversion.returnAddress, depositAddress, sendAmount);
+            uint sendAmount = conversions[conversionID].amount;
+            conversions[conversionID].amount = 0;
+            if (depositAddress.send(sendAmount)) {
+                ConversionSentToShapeShift(conversionID, conversions[conversionID].returnAddress, depositAddress, sendAmount);
+            }
             else {
                 ConversionAborted(conversionID, "deposit to address returned by Oracalize failed");
-                recoverable[conversion.returnAddress] += sendAmount;
+                recoverable[conversions[conversionID].returnAddress] += sendAmount;
             }
         }
     }
@@ -214,7 +214,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
         if (conversion.amount > 0) {
             require(msg.sender == conversion.returnAddress);
             recoverable[msg.sender] += conversion.amount;
-            conversion.amount = 0; // TODO: THIS IS NOT WORKING...
+            conversions[conversionID].amount = 0;
             ConversionAborted(conversionID, "conversion cancelled by creator");
         }
     }
@@ -276,7 +276,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
         if (msg.value > oracalizePrice) {
             Conversion memory conversion = Conversion(_returnAddress, msg.value-oracalizePrice);
-            conversions[conversionID] = conversion;
+            conversions[conversionID] = Conversion(_returnAddress, msg.value-oracalizePrice);
 
             string memory postData = createShapeShiftConversionPost(_coinSymbol, _toAddress);
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData);
@@ -284,7 +284,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
             if (myQueryId == 0) {
                 ConversionAborted(conversionID, "unexpectedly high Oracalize price when calling oracalize_query");
                 recoverable[msg.sender] += msg.value-oracalizePrice;
-                conversion.amount = 0;
+                conversions[conversionID].amount = 0;
                 return;
             }
             oracalizeMyId2conversionID[myQueryId] = conversionID;
@@ -292,7 +292,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
         }
         else {
             ConversionAborted(conversionID, "Not enough Ether sent to cover Oracalize fee");
-            // conversions[conversionID].amount = 0;
+            conversions[conversionID].amount = 0;
             recoverable[msg.sender] += msg.value;
         }
     }
