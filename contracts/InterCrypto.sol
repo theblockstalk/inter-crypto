@@ -28,7 +28,7 @@ interface OraclizeAddrResolverI {
 contract myUsingOracalize is Ownable {
     OraclizeAddrResolverI OAR;
     OraclizeI public oraclize;
-    uint public oracalize_gaslimit = 100000;
+    uint public oracalize_gaslimit = 120000;
 
     function myUsingOracalize() {
         oraclize_setNetwork();
@@ -48,6 +48,7 @@ contract myUsingOracalize is Ownable {
     function oraclize_getPrice(string datasource) internal returns (uint) {
         return oraclize.getPrice(datasource, oracalize_gaslimit);
     }
+
 
     function setGasLimit(uint _newLimit) onlyOwner public {
         oracalize_gaslimit = _newLimit;

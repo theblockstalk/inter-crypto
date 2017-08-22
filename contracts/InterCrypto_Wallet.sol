@@ -22,7 +22,7 @@ function deposit() payable {
   }
 }
 
-function intercrypto_GetInterCryptoPrice() constant public returns (uint) {
+function intercrypto_getInterCryptoPrice() constant public returns (uint) {
     return interCrypto.getInterCryptoPrice();
 }
 
@@ -38,19 +38,23 @@ function withdrawalNormal() payable external {
 }
 
 function withdrawalInterCrypto(string _coinSymbol, string _toAddress) external payable {
-    uint amount = funds[msg.sender];
+    uint amount = funds[msg.sender] + msg.value;
     funds[msg.sender] = 0;
-    uint conversionID = intercrypto_convert(amount + msg.value, _coinSymbol, _toAddress);
+    uint conversionID = intercrypto_convert(amount, _coinSymbol, _toAddress);
     WithdrawalInterCrypto(conversionID);
 }
 
 
-function intercrypto_Recover() onlyOwner external {
+function intercrypto_recover() onlyOwner public {
     interCrypto.recover();
 }
 
-function intercrypto_Recoverable() public constant returns (uint) {
+function intercrypto_recoverable() constant public returns (uint) {
     return interCrypto.recoverable(this);
+}
+
+function intercrypto_cancelConversion(uint conversionID) onlyOwner external {
+    interCrypto.cancelConversion(conversionID);
 }
 
 function kill() onlyOwner external {
