@@ -7,7 +7,7 @@ contract InterCrypto_Wallet is usingInterCrypto {
 
 event Deposit(address indexed deposit, uint amount);
 event WithdrawalNormal(address indexed withdrawal, uint amount);
-event WithdrawalInterCrypto(uint indexed transactionID);
+event WithdrawalInterCrypto(uint indexed conversionID);
 
 mapping (address => uint) public funds;
 
@@ -40,8 +40,8 @@ function withdrawalNormal() payable external {
 function withdrawalInterCrypto(string _coinSymbol, string _toAddress) external payable {
     uint amount = funds[msg.sender];
     funds[msg.sender] = 0;
-    uint transactionID = intercrypto_sendToOtherBlockchain(amount + msg.value, _coinSymbol, _toAddress);
-    WithdrawalInterCrypto(transactionID);
+    uint conversionID = intercrypto_convert(amount + msg.value, _coinSymbol, _toAddress);
+    WithdrawalInterCrypto(conversionID);
 }
 
 

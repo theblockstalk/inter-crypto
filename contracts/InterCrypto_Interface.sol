@@ -23,7 +23,7 @@ interface AbstractENS {
     // Logged when the TTL of a node changes
     event NewTTL(bytes32 indexed node, uint64 ttl);
 }
-// https://docs.ens.domains/en/latest/
+// ENS info:
 // namehash('test') = "0x04f740db81dc36c853ab4205bddd785f46e79ccedca351fc6dfcbd8cc9a33dd6"
 // namehash('eth') = "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
 // namehash('intercrypto.test') = "0x9a8369851a1b569f68940f87a1ee6b276ee3d4cb037cf4d073598669c1ade6a8"
@@ -43,18 +43,18 @@ interface AbstractENS {
 
 interface InterCrypto_Interface {
     // EVENTS
-    event TransactionStarted(uint indexed transactionID);
-    event TransactionSentToShapeShift(uint indexed transactionID, address indexed returnAddress, address indexed depositAddress, uint amount);
-    event TransactionAborted(uint indexed transactionID, string reason);
+    event ConversionStarted(uint indexed conversionID);
+    event ConversionSentToShapeShift(uint indexed conversionID, address indexed returnAddress, address indexed depositAddress, uint amount);
+    event ConversionAborted(uint indexed conversionID, string reason);
     event Recovered(address indexed recoveredTo, uint amount);
 
     // FUNCTIONS
     function getInterCryptoPrice() constant public returns (uint);
-    function sendToOtherBlockchain1(string _coinSymbol, string _toAddress) external payable returns (uint transactionID);
-    function sendToOtherBlockchain2(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint transactionID);
+    function convert1(string _coinSymbol, string _toAddress) external payable returns (uint conversionID);
+    function convert2(string _coinSymbol, string _toAddress, address _returnAddress) external payable returns(uint conversionID);
     function recover() external;
     function recoverable(address myAddress) constant public returns (uint);
-    function cancelTransaction(uint transactionID) external;
+    function cancelConversion(uint conversionID) external;
 }
 
 contract usingInterCrypto is Ownable {
@@ -102,12 +102,27 @@ contract usingInterCrypto is Ownable {
         return _size;
     }
 
-    function intercrypto_sendToOtherBlockchain(uint amount, string _coinSymbol, string _toAddress) internal returns (uint transactionID) {
-        return interCrypto.sendToOtherBlockchain1.value(amount)(_coinSymbol, _toAddress);
+    function intercrypto_convert(uint amount, string _coinSymbol, string _toAddress) internal returns (uint conversionID) {
+        return interCrypto.convert1.value(amount)(_coinSymbol, _toAddress);
     }
 
-    function intercrypto_sendToOtherBlockchain(uint amount, string _coinSymbol, string _toAddress, address _returnAddress) internal returns(uint transactionID) {
-        return interCrypto.sendToOtherBlockchain2.value(amount)(_coinSymbol, _toAddress, _returnAddress);
+    function intercrypto_convert(uint amount, string _coinSymbol, string _toAddress, address _returnAddress) internal returns(uint conversionID) {
+        return interCrypto.convert2.value(amount)(_coinSymbol, _toAddress, _returnAddress);
     }
 
+    // If you want to allow public use of functions getInterCryptoPrice(), recover(), recoverable() or cancelConversion() then please copy the following as necessary
+    // into your smart contract. They are not included by default for security reasons.
+
+    // function intercrypto_getInterCryptoPrice() constant public returns (uint) {
+    //     return interCrypto.getInterCryptoPrice();
+    // }
+    // function intercrypto_recover() public {
+    //     interCrypto.recover();
+    // }
+    // function intercrypto_recoverable() constant public returns (uint) {
+    //     return interCrypto.recoverable(this);
+    // }
+    // function intercrypto_cancelConversion(uint conversionID) external {
+    //     interCrypto.cancelConversion(conversionID);
+    // }
 }
