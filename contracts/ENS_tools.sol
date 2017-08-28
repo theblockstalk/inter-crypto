@@ -1,39 +1,5 @@
 pragma solidity ^0.4.0;
 
-// ENS info:
-// namehash('test') = "0x04f740db81dc36c853ab4205bddd785f46e79ccedca351fc6dfcbd8cc9a33dd6"
-// namehash('jackdomain.test') = "0xf2cf3eab504436e1b5a541dd9fbc5ac8547b773748bbf2bb81b350ee580702ca"
-// namehash('intercrypto.jackdomain.test') = "0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa"
-// namehash('wallet.intercrypto.jackdomain.test') = "0x41cb24b2da4620fd1f7ea359a349bbba555ca4c8274a3fca4b53f0fd5d519a4e"
-
-// namehash('eth') = "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
-// namehash('jacksplace.eth') = ""
-// namehash('intercrypto.jacksplace.eth') = ""
-// namehash('wallet.intercrypto.jacksplace.eth') = ""
-
-
-// Rinkeby ENS: 0xe7410170f87102df0055eb195163a03b7f2bff4a
-// .test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
-
-// Ropsten ENS: 0x112234455c3a32fd11230c42e7bccd4a84e02010
-// .eth: 0xc19fd9004b5c9789391679de6d766b981db94610
-// .test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
-
-// Mainnet ENS: 0x314159265dD8dbb310642f98f50C066173C1259b
-// .eth: 0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef, https://etherscan.io/ens, webapp: https://registrar.ens.domains/
-
-/*
-
-Temporary Hash Registrar
-========================
-
-This is a simplified version of a hash registrar. It is purporsefully limited:
-names cannot be six letters or shorter, new auctions will stop after 4 years.
-
-The plan is to test the basic features and then move to a new contract in at most
-2 years, when some sort of renewal mechanism will be enabled.
-*/
-
 contract AbstractENS {
     function owner(bytes32 node) constant returns(address);
     function resolver(bytes32 node) constant returns(address);
@@ -818,5 +784,214 @@ contract FIFSRegistrar {
      */
     function register(bytes32 subnode, address owner) only_owner(subnode) {
         ens.setSubnodeOwner(rootNode, subnode, owner);
+    }
+}
+
+/**
+ * A simple resolver anyone can use; only allows the owner of a node to set its
+ * address.
+ */
+contract PublicResolver {
+    bytes4 constant INTERFACE_META_ID = 0x01ffc9a7;
+    bytes4 constant ADDR_INTERFACE_ID = 0x3b3b57de;
+    bytes4 constant CONTENT_INTERFACE_ID = 0xd8389dc5;
+    bytes4 constant NAME_INTERFACE_ID = 0x691f3431;
+    bytes4 constant ABI_INTERFACE_ID = 0x2203ab56;
+    bytes4 constant PUBKEY_INTERFACE_ID = 0xc8690233;
+    bytes4 constant TEXT_INTERFACE_ID = 0x59d1d43c;
+
+    event AddrChanged(bytes32 indexed node, address a);
+    event ContentChanged(bytes32 indexed node, bytes32 hash);
+    event NameChanged(bytes32 indexed node, string name);
+    event ABIChanged(bytes32 indexed node, uint256 indexed contentType);
+    event PubkeyChanged(bytes32 indexed node, bytes32 x, bytes32 y);
+    event TextChanged(bytes32 indexed node, string indexed indexedKey, string key);
+
+    struct PublicKey {
+        bytes32 x;
+        bytes32 y;
+    }
+
+    struct Record {
+        address addr;
+        bytes32 content;
+        string name;
+        PublicKey pubkey;
+        mapping(string=>string) text;
+        mapping(uint256=>bytes) abis;
+    }
+
+    AbstractENS ens;
+    mapping(bytes32=>Record) records;
+
+    modifier only_owner(bytes32 node) {
+        if (ens.owner(node) != msg.sender) throw;
+        _;
+    }
+
+    /**
+     * Constructor.
+     * @param ensAddr The ENS registrar contract.
+     */
+    function PublicResolver(AbstractENS ensAddr) {
+        ens = ensAddr;
+    }
+
+    /**
+     * Returns true if the resolver implements the interface specified by the provided hash.
+     * @param interfaceID The ID of the interface to check for.
+     * @return True if the contract implements the requested interface.
+     */
+    function supportsInterface(bytes4 interfaceID) constant returns (bool) {
+        return interfaceID == ADDR_INTERFACE_ID ||
+               interfaceID == CONTENT_INTERFACE_ID ||
+               interfaceID == NAME_INTERFACE_ID ||
+               interfaceID == ABI_INTERFACE_ID ||
+               interfaceID == PUBKEY_INTERFACE_ID ||
+               interfaceID == TEXT_INTERFACE_ID ||
+               interfaceID == INTERFACE_META_ID;
+    }
+
+    /**
+     * Returns the address associated with an ENS node.
+     * @param node The ENS node to query.
+     * @return The associated address.
+     */
+    function addr(bytes32 node) constant returns (address ret) {
+        ret = records[node].addr;
+    }
+
+    /**
+     * Sets the address associated with an ENS node.
+     * May only be called by the owner of that node in the ENS registry.
+     * @param node The node to update.
+     * @param addr The address to set.
+     */
+    function setAddr(bytes32 node, address addr) only_owner(node) {
+        records[node].addr = addr;
+        AddrChanged(node, addr);
+    }
+
+    /**
+     * Returns the content hash associated with an ENS node.
+     * Note that this resource type is not standardized, and will likely change
+     * in future to a resource type based on multihash.
+     * @param node The ENS node to query.
+     * @return The associated content hash.
+     */
+    function content(bytes32 node) constant returns (bytes32 ret) {
+        ret = records[node].content;
+    }
+
+    /**
+     * Sets the content hash associated with an ENS node.
+     * May only be called by the owner of that node in the ENS registry.
+     * Note that this resource type is not standardized, and will likely change
+     * in future to a resource type based on multihash.
+     * @param node The node to update.
+     * @param hash The content hash to set
+     */
+    function setContent(bytes32 node, bytes32 hash) only_owner(node) {
+        records[node].content = hash;
+        ContentChanged(node, hash);
+    }
+
+    /**
+     * Returns the name associated with an ENS node, for reverse records.
+     * Defined in EIP181.
+     * @param node The ENS node to query.
+     * @return The associated name.
+     */
+    function name(bytes32 node) constant returns (string ret) {
+        ret = records[node].name;
+    }
+
+    /**
+     * Sets the name associated with an ENS node, for reverse records.
+     * May only be called by the owner of that node in the ENS registry.
+     * @param node The node to update.
+     * @param name The name to set.
+     */
+    function setName(bytes32 node, string name) only_owner(node) {
+        records[node].name = name;
+        NameChanged(node, name);
+    }
+
+    /**
+     * Returns the ABI associated with an ENS node.
+     * Defined in EIP205.
+     * @param node The ENS node to query
+     * @param contentTypes A bitwise OR of the ABI formats accepted by the caller.
+     * @return contentType The content type of the return value
+     * @return data The ABI data
+     */
+    function ABI(bytes32 node, uint256 contentTypes) constant returns (uint256 contentType, bytes data) {
+        var record = records[node];
+        for(contentType = 1; contentType <= contentTypes; contentType <<= 1) {
+            if ((contentType & contentTypes) != 0 && record.abis[contentType].length > 0) {
+                data = record.abis[contentType];
+                return;
+            }
+        }
+        contentType = 0;
+    }
+
+    /**
+     * Sets the ABI associated with an ENS node.
+     * Nodes may have one ABI of each content type. To remove an ABI, set it to
+     * the empty string.
+     * @param node The node to update.
+     * @param contentType The content type of the ABI
+     * @param data The ABI data.
+     */
+    function setABI(bytes32 node, uint256 contentType, bytes data) only_owner(node) {
+        // Content types must be powers of 2
+        if (((contentType - 1) & contentType) != 0) throw;
+
+        records[node].abis[contentType] = data;
+        ABIChanged(node, contentType);
+    }
+
+    /**
+     * Returns the SECP256k1 public key associated with an ENS node.
+     * Defined in EIP 619.
+     * @param node The ENS node to query
+     * @return x, y the X and Y coordinates of the curve point for the public key.
+     */
+    function pubkey(bytes32 node) constant returns (bytes32 x, bytes32 y) {
+        return (records[node].pubkey.x, records[node].pubkey.y);
+    }
+
+    /**
+     * Sets the SECP256k1 public key associated with an ENS node.
+     * @param node The ENS node to query
+     * @param x the X coordinate of the curve point for the public key.
+     * @param y the Y coordinate of the curve point for the public key.
+     */
+    function setPubkey(bytes32 node, bytes32 x, bytes32 y) only_owner(node) {
+        records[node].pubkey = PublicKey(x, y);
+        PubkeyChanged(node, x, y);
+    }
+
+    /**
+     * Returns the text data associated with an ENS node and key.
+     * @param node The ENS node to query.
+     * @param key The text data key to query.
+     * @return The associated text data.
+     */
+    function text(bytes32 node, string key) constant returns (string ret) {
+        ret = records[node].text[key];
+    }
+
+    /**
+     * Sets the text data associated with an ENS node and key.
+     * May only be called by the owner of that node in the ENS registry.
+     * @param node The node to update.
+     * @param key The key to set.
+     * @param value The text data value to set.
+     */
+    function setText(bytes32 node, string key, string value) only_owner(node) {
+        records[node].text[key] = value;
+        TextChanged(node, key, key);
     }
 }

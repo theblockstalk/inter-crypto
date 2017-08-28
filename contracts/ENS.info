@@ -1,0 +1,25 @@
+ENS info:
+namehash('test') = "0x04f740db81dc36c853ab4205bddd785f46e79ccedca351fc6dfcbd8cc9a33dd6"
+namehash('jackdomain.test') = "0xf2cf3eab504436e1b5a541dd9fbc5ac8547b773748bbf2bb81b350ee580702ca"
+namehash('intercrypto.jackdomain.test') = "0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa"
+namehash('wallet.intercrypto.jackdomain.test') = "0x41cb24b2da4620fd1f7ea359a349bbba555ca4c8274a3fca4b53f0fd5d519a4e"
+
+namehash('eth') = "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
+namehash('jacksplace.eth') = "0xb48962862b6c7aa729d78badb244a410b0cfcc5033d1799fff7d0153e9a27833"
+namehash('intercrypto.jacksplace.eth') = "0x921a56636fce44f7cbd33eed763c940f580add9ffb4da7007f8ff6e99804a7c8"
+namehash('wallet.intercrypto.jacksplace.eth') = "0xf5cadf7ec134047fa93e1bfb1725a74aa949e19c02596cf8299932a4fe1c4f29"
+
+namehash('resolver.eth') = "0xfdd5d5de6dd63db72bbc2d487944ba13bf775b50a80805fe6fcaba9b0fba88f5"
+
+Rinkeby ENS: 0xe7410170f87102df0055eb195163a03b7f2bff4a
+Public resolver: 0x655d1ee6f8ac8b155fbaa133fbfb55cfbff11c04
+.test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
+
+Ropsten ENS: 0x112234455c3a32fd11230c42e7bccd4a84e02010
+Public resolver: 0xf8c4515cd2f4849c74815f5f5e4ce0662c14b234
+.eth: 0xc19fd9004b5c9789391679de6d766b981db94610
+.test: 0x21397c1a1f4acd9132fe36df011610564b87e24b
+
+Mainnet ENS: 0x314159265dD8dbb310642f98f50C066173C1259b
+Public resolver:
+.eth: 0x6090A6e47849629b7245Dfa1Ca21D94cd15878Ef, https://etherscan.io/ens, webapp: https://registrar.ens.domains/
