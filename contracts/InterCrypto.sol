@@ -24,34 +24,34 @@ interface OraclizeAddrResolverI {
     function getAddress() returns (address _addr);
 }
 
-// this is a reduced and optimize version of the usingOracalize contract in https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.4.sol
-contract myUsingOracalize is Ownable {
+// this is a reduced and optimize version of the usingOraclize contract in https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.4.sol
+contract myUsingOraclize is Ownable {
     OraclizeAddrResolverI OAR;
     OraclizeI public oraclize;
-    uint public oracalize_gaslimit = 120000;
+    uint public oraclize_gaslimit = 120000;
 
-    function myUsingOracalize() {
+    function myUsingOraclize() {
         oraclize_setNetwork();
-        update_oracalize();
+        update_oraclize();
     }
 
-    function update_oracalize() onlyOwner public {
+    function update_oraclize() onlyOwner public {
         oraclize = OraclizeI(OAR.getAddress());
     }
 
     function oraclize_query(string datasource, string arg1, string arg2) internal returns (bytes32 id) {
-        uint price = oraclize.getPrice(datasource, oracalize_gaslimit);
-        if (price > 1 ether + tx.gasprice*oracalize_gaslimit) return 0; // unexpectedly high price
-        return oraclize.query2_withGasLimit.value(price)(0, datasource, arg1, arg2, oracalize_gaslimit);
+        uint price = oraclize.getPrice(datasource, oraclize_gaslimit);
+        if (price > 1 ether + tx.gasprice*oraclize_gaslimit) return 0; // unexpectedly high price
+        return oraclize.query2_withGasLimit.value(price)(0, datasource, arg1, arg2, oraclize_gaslimit);
     }
 
     function oraclize_getPrice(string datasource) internal returns (uint) {
-        return oraclize.getPrice(datasource, oracalize_gaslimit);
+        return oraclize.getPrice(datasource, oraclize_gaslimit);
     }
 
 
     function setGasLimit(uint _newLimit) onlyOwner public {
-        oracalize_gaslimit = _newLimit;
+        oraclize_gaslimit = _newLimit;
     }
 
     function oraclize_setNetwork() internal {
@@ -113,11 +113,11 @@ contract myUsingOracalize is Ownable {
 
 /**
  * @title InterCrypto
- * @dev The InterCrypto offers a no-commission service using Oracalize and ShapeShift
+ * @dev The InterCrypto offers a no-commission service using Oraclize and ShapeShift
  * that allows for on-blockchain conversion from Ether to any other blockchain that ShapeShift supports.
  * @author Jack Tanner - <jnt16@ic.ac.uk>
  */
-contract InterCrypto is Ownable, myUsingOracalize {
+contract InterCrypto is Ownable, myUsingOraclize {
     // _______________VARIABLES_______________
     struct Conversion {
         address returnAddress;
@@ -126,7 +126,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
     mapping (uint => Conversion) public conversions;
     uint conversionCount = 0;
-    mapping (bytes32 => uint) oracalizeMyId2conversionID;
+    mapping (bytes32 => uint) oraclizeMyId2conversionID;
     mapping (address => uint) public recoverable;
 
     // _______________EVENTS_______________
@@ -154,7 +154,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
     function () payable {}
 
     /**
-     * Sets up a ShapeShift cryptocurrency conversion using Oracalize and the ShapeShift API. Must be sent more Ether than the Oracalize price.
+     * Sets up a ShapeShift cryptocurrency conversion using Oraclize and the ShapeShift API. Must be sent more Ether than the Oraclize price.
      * Returns a conversionID which can be used for tracking of the conversion.
      * @param _coinSymbol The coinsymbol of the other blockchain to be used by ShapeShift. See engine() function for more details.
      * @param _toAddress The address on the other blockchain that the converted cryptocurrency will be sent to.
@@ -164,7 +164,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
     }
 
     /**
-     * Sets up a ShapeShift cryptocurrency conversion using Oracalize and the ShapeShift API. Must be sent more Ether than the Oracalize price.
+     * Sets up a ShapeShift cryptocurrency conversion using Oraclize and the ShapeShift API. Must be sent more Ether than the Oraclize price.
      * Returns a conversionID which can be used for tracking of the conversion.
      * @param _coinSymbol The coinsymbol of the other blockchain to be used by ShapeShift. See engine() function for more details.
      * @param _toAddress The address on the other blockchain that the converted cryptocurrency will be sent to.
@@ -175,30 +175,30 @@ contract InterCrypto is Ownable, myUsingOracalize {
     }
 
     /**
-     * Callback function for use exclusively by Oracalize.
-     * @param myid The Oracalize id of the query.
+     * Callback function for use exclusively by Oraclize.
+     * @param myid The Oraclize id of the query.
      * @param result The result of the query.
      */
     function __callback(bytes32 myid, string result) {
         if (msg.sender != oraclize.cbAddress()) revert();
 
-        uint conversionID = oracalizeMyId2conversionID[myid];
+        uint conversionID = oraclizeMyId2conversionID[myid];
 
         if( bytes(result).length == 0 ) {
-            ConversionAborted(conversionID, "Oracalize return value was invalid, this is probably due to incorrect convert() argments");
+            ConversionAborted(conversionID, "Oraclize return value was invalid, this is probably due to incorrect convert() argments");
             recoverable[conversions[conversionID].returnAddress] += conversions[conversionID].amount;
             conversions[conversionID].amount = 0;
         }
         else {
             address depositAddress = parseAddr(result);
-            require(depositAddress != msg.sender); // prevent DAO tpe re-entracy vulnerability that can potentially be done by Oracalize
+            require(depositAddress != msg.sender); // prevent DAO tpe re-entracy vulnerability that can potentially be done by Oraclize
             uint sendAmount = conversions[conversionID].amount;
             conversions[conversionID].amount = 0;
             if (depositAddress.send(sendAmount)) {
                 ConversionSentToShapeShift(conversionID, conversions[conversionID].returnAddress, depositAddress, sendAmount);
             }
             else {
-                ConversionAborted(conversionID, "deposit to address returned by Oracalize failed");
+                ConversionAborted(conversionID, "deposit to address returned by Oraclize failed");
                 recoverable[conversions[conversionID].returnAddress] += sendAmount;
             }
         }
@@ -206,7 +206,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
     /**
      * Cancel a cryptocurrency conversion.
-     * This should only be required to be called if Oracalize fails make a return call to __callback().
+     * This should only be required to be called if Oraclize fails make a return call to __callback().
      * @param conversionID The conversion ID of the cryptocurrency conversion, generated during engine().
      */
      function cancelConversion(uint conversionID) external {
@@ -225,7 +225,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
      * 1. Bad user inputs to convert().
      * 2. ShapeShift temporarily or permanently discontinues support of other blockchain.
      * 3. ShapeShift service becomes unavailable.
-     * 4. Oracalize service become unavailable.
+     * 4. Oraclize service become unavailable.
      */
      function recover() external {
         uint amount = recoverable[msg.sender];
@@ -239,7 +239,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
     }
     // _______________PUBLIC FUNCTIONS_______________
     /**
-     * Returns the price in Wei paid to Oracalize.
+     * Returns the price in Wei paid to Oraclize.
      */
     function getInterCryptoPrice() constant public returns (uint) {
         return oraclize_getPrice('URL');
@@ -247,7 +247,7 @@ contract InterCrypto is Ownable, myUsingOracalize {
 
     // _______________INTERNAL FUNCTIONS_______________
     /**
-     * Sets up a ShapeShift cryptocurrency conversion using Oracalize and the ShapeShift API. Must be sent more Ether than the Oracalize price.
+     * Sets up a ShapeShift cryptocurrency conversion using Oraclize and the ShapeShift API. Must be sent more Ether than the Oraclize price.
      * Returns a conversionID which can be used for tracking of the conversion.
      * @param _coinSymbol The coinsymbol of the other blockchain to be used by ShapeShift. See engine() function for more details.
      * @param _toAddress The address on the other blockchain that the converted cryptocurrency will be sent to.
@@ -273,26 +273,26 @@ contract InterCrypto is Ownable, myUsingOracalize {
             return;
         }
 
-        uint oracalizePrice = getInterCryptoPrice();
+        uint oraclizePrice = getInterCryptoPrice();
 
-        if (msg.value > oracalizePrice) {
-            Conversion memory conversion = Conversion(_returnAddress, msg.value-oracalizePrice);
-            conversions[conversionID] = Conversion(_returnAddress, msg.value-oracalizePrice);
+        if (msg.value > oraclizePrice) {
+            Conversion memory conversion = Conversion(_returnAddress, msg.value-oraclizePrice);
+            conversions[conversionID] = Conversion(_returnAddress, msg.value-oraclizePrice);
 
             string memory postData = createShapeShiftConversionPost(_coinSymbol, _toAddress);
             bytes32 myQueryId = oraclize_query("URL", "json(https://shapeshift.io/shift).deposit", postData);
 
             if (myQueryId == 0) {
-                ConversionAborted(conversionID, "unexpectedly high Oracalize price when calling oracalize_query");
-                recoverable[msg.sender] += msg.value-oracalizePrice;
+                ConversionAborted(conversionID, "unexpectedly high Oraclize price when calling oraclize_query");
+                recoverable[msg.sender] += msg.value-oraclizePrice;
                 conversions[conversionID].amount = 0;
                 return;
             }
-            oracalizeMyId2conversionID[myQueryId] = conversionID;
+            oraclizeMyId2conversionID[myQueryId] = conversionID;
             ConversionStarted(conversionID);
         }
         else {
-            ConversionAborted(conversionID, "Not enough Ether sent to cover Oracalize fee");
+            ConversionAborted(conversionID, "Not enough Ether sent to cover Oraclize fee");
             conversions[conversionID].amount = 0;
             recoverable[msg.sender] += msg.value;
         }
@@ -345,12 +345,12 @@ contract InterCrypto is Ownable, myUsingOracalize {
     }
 
     /**
-     * Returns the ShapeShift shift API string that is needed to be sent to Oracalize.
+     * Returns the ShapeShift shift API string that is needed to be sent to Oraclize.
      * @param _coinSymbol The coinsymbol of the other blockchain to be used by ShapeShift. See engine() function for more details.
      * @param _toAddress The address on the other blockchain that the converted cryptocurrency will be sent to.
      * Example output:
      * ' {"withdrawal":"LbZcDdMeP96ko85H21TQii98YFF9RgZg3D","pair":"eth_ltc","returnAddress":"558999ff2e0daefcb4fcded4c89e07fdf9ccb56c"}'
-     * Note that an extra space ' ' is needed at the start to tell Oracalize to make a POST query
+     * Note that an extra space ' ' is needed at the start to tell Oraclize to make a POST query
      */
     function createShapeShiftConversionPost(string _coinSymbol, string _toAddress) internal returns (string sFinal) {
         string memory s1 = ' {"withdrawal":"';
