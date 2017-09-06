@@ -57,14 +57,14 @@ contract usingInterCrypto is Ownable {
     bytes32 public ResolverNode; // ENS Node name
     bytes32 public InterCryptoNode; // ENS Node name
 
-    function usingInterCrypto() public {
+    function usingInterCrypto() {
         setNetwork();
         updateResolver();
         updateInterCrypto();
 
     }
 
-    function setNetwork() internal returns(bool) {
+    function setNetwork() private {
         if (getCodeSize(0x314159265dD8dbb310642f98f50C066173C1259b)>0){ //mainnet
             abstractENS = AbstractENS(0x314159265dD8dbb310642f98f50C066173C1259b);
             ResolverNode = 0xfdd5d5de6dd63db72bbc2d487944ba13bf775b50a80805fe6fcaba9b0fba88f5; // resolver.eth
@@ -74,6 +74,9 @@ contract usingInterCrypto is Ownable {
             abstractENS = AbstractENS(0xe7410170f87102df0055eb195163a03b7f2bff4a);
             ResolverNode = 0xf2cf3eab504436e1b5a541dd9fbc5ac8547b773748bbf2bb81b350ee580702ca; // jackdomain.test
             InterCryptoNode = 0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa; // intercrypto.jackdomain.test
+            // abstractENS = AbstractENS(0xe7410170f87102df0055eb195163a03b7f2bff4a);
+            // ResolverNode = 0xf2cf3eab504436e1b5a541dd9fbc5ac8547b773748bbf2bb81b350ee580702ca; // jackdomain.test
+            // InterCryptoNode = 0xbe93c9e419d658afd89a8650dd90e37e763e75da1e663b9d57494aedf27f3eaa; // intercrypto.jackdomain.test
         }
         else if (getCodeSize(0x112234455c3a32fd11230c42e7bccd4a84e02010)>0){ //ropsten
             abstractENS = AbstractENS(0x112234455c3a32fd11230c42e7bccd4a84e02010);
@@ -90,14 +93,22 @@ contract usingInterCrypto is Ownable {
     }
 
     function updateInterCrypto() onlyOwner public {
-        interCrypto = InterCrypto_Interface(abstractResolver.addr(InterCryptoNode));
+        if ( abstractResolver.supportsInterface(0x3b3b57de) ) // Support address resolving "0x3b3b57de"
+            address interCryptoAddr = abstractResolver.addr(InterCryptoNode);
+
+        if ( interCryptoAddr != 0) { // Check that address resolves
+            interCrypto = InterCrypto_Interface(interCryptoAddr);
+        }
+        else {
+            revert();
+        }
     }
 
     function updateInterCryptonode(bytes32 newNodeName) onlyOwner public {
         InterCryptoNode = newNodeName;
     }
 
-    function getCodeSize(address _addr) constant internal returns(uint _size) {
+    function getCodeSize(address _addr) constant private returns(uint _size) {
         assembly {
             _size := extcodesize(_addr)
         }
@@ -118,13 +129,13 @@ contract usingInterCrypto is Ownable {
     // function intercrypto_getInterCryptoPrice() constant public returns (uint) {
     //     return interCrypto.getInterCryptoPrice();
     // }
-    // function intercrypto_recover() onlyOwner public {
+    // function intercrypto_recover() onlyOwner internal {
     //     interCrypto.recover();
     // }
     // function intercrypto_recoverable() constant public returns (uint) {
     //     return interCrypto.recoverable(this);
     // }
-    // function intercrypto_cancelConversion(uint conversionID) onlyOwner external {
+    // function intercrypto_cancelConversion(uint conversionID) onlyOwner internal {
     //     interCrypto.cancelConversion(conversionID);
     // }
 }
