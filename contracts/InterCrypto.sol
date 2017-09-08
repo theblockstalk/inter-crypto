@@ -49,12 +49,16 @@ contract myUsingOraclize is Ownable {
         return oraclize.getPrice(datasource, oraclize_gaslimit);
     }
 
+    function oraclize_setGasPrice(uint _gasPrice) onlyOwner public {
+        oraclize.setCustomGasPrice(_gasPrice);
+    }
+
 
     function setGasLimit(uint _newLimit) onlyOwner public {
         oraclize_gaslimit = _newLimit;
     }
 
-    function oraclize_setNetwork() internal {
+    function oraclize_setNetwork() private {
         if (getCodeSize(0x1d3B2638a7cC9f2CB3D298A3DA7a90B67E5506ed)>0){ //mainnet
             OAR = OraclizeAddrResolverI(0x1d3B2638a7cC9f2CB3D298A3DA7a90B67E5506ed);
         }
@@ -252,11 +256,11 @@ contract InterCrypto is Ownable, myUsingOraclize {
      * @param _coinSymbol The coinsymbol of the other blockchain to be used by ShapeShift. See engine() function for more details.
      * @param _toAddress The address on the other blockchain that the converted cryptocurrency will be sent to.
      * Example first two arguments:
-     * "ltc", "LbZcDdMeP96ko85H21TQii98YFF9RgZg3D"    Litecoin
-     * "btc", "1L8oRijgmkfcZDYA21b73b6DewLtyYs87s"    Bitcoin
-     * "dash", "Xoopows17idkTwNrMZuySXBwQDorsezQAx"   Dash
-     * "zec", "t1N7tf1xRxz5cBK51JADijLDWS592FPJtya"   ZCash
-     * "doge", "DMAFvwTH2upni7eTau8au6Rktgm2bUkMei"   Dogecoin
+     * "ltc", "LMSBKhGtswagcq8PCuJDzUqmx3JQcv6B9R"    Litecoin
+     * "btc", "14u51XrAu3YC22T95GztxXftoKBN8QGVBA"    Bitcoin
+     * "dash", "XppHCdeA7gzkdMvX1qcf9nw1ut5U9FyGx7"   Dash
+     * "zec", "t1c2sEb4qxhxdEB994GcdU8SHoa7AmgFXbc"   ZCash
+     * "doge", "D9Y8BBkJQkjY6cSXek2ZzbxEZcpyo5rW9f"   Dogecoin
      * Test symbol pairs using ShapeShift API (shapeshift.io/validateAddress/[address]/[coinSymbol]) or by creating a test
      * conversion on https://shapeshift.io first whenever possible before using it with InterCrypto.
      * @param _returnAddress The Ethereum address that any Ether should be sent back to in the event that the ShapeShift conversion is invalid or fails.
